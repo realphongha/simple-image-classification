@@ -53,12 +53,12 @@ class ClassiferTorch(ClassifierAbs):
         self.device = device
         print("Start infering using device: %s" % device)
         print("Config:", cfg)
-        self.model = Model(cfg)
+        self.model = Model(cfg, training=False)
         weights_path = cfg["TEST"]["WEIGHTS"]
         if not weights_path:
             raise Exception("Please specify path to model weights in config file!")
         weights = torch.load(weights_path, map_location=device)
-        self.model.load_state_dict(weights['state_dict'])
+        self.model.load_state_dict(weights['state_dict'] if 'state_dict' in weights else weights)
         self.model.to(device)
         self.model.eval()
 

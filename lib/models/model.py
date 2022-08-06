@@ -6,7 +6,7 @@ from .heads import *
 
 
 class Model(nn.Module):
-    def __init__(self, cfg):
+    def __init__(self, cfg, training=True):
         super(Model, self).__init__()
         self.cfg = cfg
         backbone_name = cfg["MODEL"]["BACKBONE"]["NAME"]
@@ -16,7 +16,7 @@ class Model(nn.Module):
         if backbone_name == "shufflenetv2":
             self.backbone = get_shufflenetv2(
                 cfg["MODEL"]["BACKBONE"]["WIDEN_FACTOR"], 
-                cfg["TRAIN"]["PRETRAINED"]
+                cfg["TRAIN"]["PRETRAINED"] if training else None
             )
             self.out_channels = self.backbone.stage_out_channels[-1]
         else:

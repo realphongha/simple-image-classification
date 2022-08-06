@@ -45,13 +45,13 @@ def main(cfg, output_path):
                             shuffle=cfg["TEST"]["SHUFFLE"],
                             num_workers=cfg["WORKERS"])
 
-    model = Model(cfg)
+    model = Model(cfg, training=False)
 
     weights_path = cfg["TEST"]["WEIGHTS"]
     if not weights_path:
         raise Exception("Please specify path to model weights in config file!")
     weights = torch.load(weights_path, map_location=device)
-    model.load_state_dict(weights['state_dict'])
+    model.load_state_dict(weights['state_dict'] if 'state_dict' in weights else weights)
 
     model.to(device)
 

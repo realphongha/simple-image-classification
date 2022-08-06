@@ -54,7 +54,7 @@ def main(cfg):
                             shuffle=cfg["TEST"]["SHUFFLE"],
                             num_workers=cfg["WORKERS"])
 
-    model = Model(cfg)
+    model = Model(cfg, training=True)
 
     model.to(device)
 
