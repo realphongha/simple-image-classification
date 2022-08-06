@@ -1,11 +1,11 @@
 # Simple image classification
 Simple image classification with Pytorch. Currently supporting:
 ## Backbones:
-* ShuffleNet V2
-* ShuffleNet V2 Plus
-* MobileNet V3
+* [ShuffleNet V2](https://arxiv.org/abs/1807.11164)
+* [ShuffleNet V2 Plus](https://github.com/megvii-model/ShuffleNet-Series)
+* [MobileNet V3](https://arxiv.org/abs/1905.02244)
 ## Neck:
-* B-CNN
+* [B-CNN](https://www.cv-foundation.org/openaccess/content_iccv_2015/html/Lin_Bilinear_CNN_Models_ICCV_2015_paper.html)
 ## Head:
 * Linear 
 ## Loss function:
