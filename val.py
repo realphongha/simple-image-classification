@@ -66,8 +66,6 @@ def main(cfg, output_path):
                                                         val_loader, device)
 
     print("Done evaluating!")
-    print("Acc:", acc)
-    print(clf_report)
 
     # writes results:
     with open(os.path.join(output_path, "final_results.txt"), "w") as file:
@@ -89,7 +87,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--config',
                         type=str,
-                        default='configs/customds/customds_shufflenetv2_gap_linearcls.yaml',
+                        default='configs/customds/dogsvscats_shufflenetv2_none_linearcls_10eps.yaml',
                         help='path to config file')
     opt = parser.parse_args()
 

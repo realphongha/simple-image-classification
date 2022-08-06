@@ -64,7 +64,7 @@ def main(opt, cfg):
     model.to(device)
     model.eval()
         
-    dummy_input = torch.zeros(opt.batch, cfg["MODEL"]["INPUT_SHAPE"][0], 
+    dummy_input = torch.zeros(opt.batch, 3, cfg["MODEL"]["INPUT_SHAPE"][0], 
                                 cfg["MODEL"]["INPUT_SHAPE"][1]).to(device)
     if opt.format == "onnx":
         export_onnx(model, dummy_input, opt)

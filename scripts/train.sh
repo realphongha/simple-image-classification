@@ -1,1 +1,1 @@
-python train.py --config configs/customds/customds_shufflenetv2_none_linearcls.yaml
+python train.py --config configs/customds/dogsvscats_shufflenetv2_none_linearcls_10eps.yaml

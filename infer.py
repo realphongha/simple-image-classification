@@ -19,14 +19,14 @@ class ClassifierAbs(metaclass=ABCMeta):
     def softmax(x):
         """Compute softmax values for each sets of scores in x."""
         e_x = np.exp(x - np.max(x))
-        return e_x / e_x.sum(axis=0)
+        return e_x / e_x.sum()
         
     def _preprocess(self, img):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = img.astype(np.float32)
         img = cv2.resize(img, self.input_shape, interpolation=cv2.INTER_LINEAR)
         img = (img/255.0 - self.mean) / self.std
-        img = img.transpose([2, 0, 1])
+        img = img.transpose([2, 0, 1]).astype(np.float32)
         return img[None]
     
     def _postprocess(self, output):
@@ -68,7 +68,7 @@ class ClassiferTorch(ClassifierAbs):
         speed = list()
         for _ in range(10):
             begin = time.time()
-            output = self.model(inp)
+            output = self.model(inp)[0]
             speed.append(time.time()-begin)
         np_output = output.cpu().detach().numpy() if output.requires_grad else output.cpu().numpy()
         cls, cls_prob = self._postprocess(np_output)
@@ -88,7 +88,7 @@ class ClassiferOnnx(ClassifierAbs):
         speed = list()
         for _ in range(10):
             begin = time.time()
-            output = self.ort_session.run(None, {self.input_name: inp})[0]
+            output = self.ort_session.run(None, {self.input_name: inp})[0][0]
             speed.append(time.time()-begin)
         cls, cls_prob = self._postprocess(output)
         return cls, cls_prob, np.mean(speed)
@@ -111,6 +111,8 @@ def main(opt):
                                 cfg["MODEL"]["INPUT_SHAPE"],
                                 "doesnt_matter",
                                 cfg)
+    elif opt.engine == "onnx":
+        engine = ClassiferOnnx(opt.model, opt.input_shape, opt.device)
     else:
         raise NotImplementedError("Engine %s is not supported!" % opt.engine)
     
@@ -118,8 +120,8 @@ def main(opt):
     cls, cls_prob, latency = engine.infer(img)
 
     print("Result:")
-    print("Class:", cls)
-    print("Class probability:", cls_prob)
+    print("Class: %i, score: %.4f" % (cls, cls_prob[cls]))
+    print("Classes probability:", cls_prob)
     print("Latency: %.2f, FPS: %.2f" % (latency, 1/latency))
 
 
@@ -135,7 +137,7 @@ if __name__ == "__main__":
                         help='engine type (onnx, mnn, torch)')
     parser.add_argument('--model',
                         type=str,
-                        default='weights/dogsvscats_shufflenetv2_none_linearcls.onnx',
+                        default='weights/dogsvscats_shufflenetv2_none_linearcls_10eps.onnx',
                         help='path to model weights')
     parser.add_argument('--input-shape', 
                         nargs='+',
@@ -148,7 +150,7 @@ if __name__ == "__main__":
                         help='device to run infer on')
     parser.add_argument('--config',
                         type=str,
-                        default='configs/customds/customds_shufflenetv2_gap_linearcls.yaml',
+                        default='configs/customds/dogsvscats_shufflenetv2_none_linearcls_10eps.yaml',
                         help='path to config file (only for torch engine)')
     opt = parser.parse_args()
     main(opt)
