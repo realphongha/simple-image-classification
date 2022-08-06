@@ -13,7 +13,7 @@ def train(model, criterion, optimizer, train_loader, device):
     pred = list()
     gt = list()
 
-    for data, label in tqdm(train_loader):
+    for data, label, raw_img in tqdm(train_loader):
         data = data.float().to(device)
         label = label.long().to(device)
         output = model(data)
@@ -46,7 +46,7 @@ def evaluate(model, criterion, val_loader, device, log=True):
     pred = list()
     gt = list()
 
-    for data, label in tqdm(val_loader):
+    for data, label, raw_img in tqdm(val_loader):
         data = data.float().to(device)
         label = label.long().to(device)
         output = model(data)
@@ -73,20 +73,4 @@ def evaluate(model, criterion, val_loader, device, log=True):
     conf_matrix = confusion_matrix(gt, pred)
 
     return f1, acc, clf_report, mean_loss, conf_matrix
-
-
-def infer(model, data, device, speed_test_times=1):
-    print("Predicting...")
-    model.eval()
-
-    data = data.float().to(device)
-    speeds = list()
-    for _ in range(speed_test_times):
-        begin = time()
-        output = model(data)
-        speeds.append(time()-begin)
-    output_label = torch.max(output, 1).indices.cpu().detach().numpy()
-    output_prob = torch.softmax(output, 1).cpu().detach().numpy()
-
-    return output_label, output_prob, output, np.mean(speeds)
     

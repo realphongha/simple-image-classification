@@ -57,7 +57,7 @@ def main(cfg, output_path):
 
     if cfg["MODEL"]["HEAD"]["LOSS"] == "CrossEntropy":
         loss_weight = cfg["MODEL"]["HEAD"]["LOSS_WEIGHT"]
-        criterion = CrossEntropyLoss(weight=torch.Tensor(loss_weight))
+        criterion = CrossEntropyLoss(weight=torch.Tensor(loss_weight).to(device))
     else:
         raise NotImplementedError("%s is not implemented!" % cfg["MODEL"]["HEAD"]["LOSS"])
 

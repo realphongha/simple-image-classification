@@ -20,7 +20,7 @@ from lib.tools import train, evaluate
 from lib.utils import save_checkpoint
 
 
-def main(cfg, output_path):
+def main(cfg):
     cudnn.benchmark = cfg["CUDNN"]["BENCHMARK"]
     cudnn.deterministic = cfg["CUDNN"]["DETERMINISTIC"]
     cudnn.enabled = cfg["CUDNN"]["ENABLED"]
@@ -56,6 +56,8 @@ def main(cfg, output_path):
 
     model = Model(cfg)
 
+    model.to(device)
+
     if cfg["TRAIN"]["OPTIMIZER"] == "adam":
         optimizer = optim.Adam(model.parameters(),
                                lr=cfg["TRAIN"]["LR"])
@@ -70,7 +72,7 @@ def main(cfg, output_path):
 
     if cfg["MODEL"]["HEAD"]["LOSS"] == "CrossEntropy":
         loss_weight = cfg["MODEL"]["HEAD"]["LOSS_WEIGHT"]
-        criterion = CrossEntropyLoss(weight=torch.Tensor(loss_weight))
+        criterion = CrossEntropyLoss(weight=torch.Tensor(loss_weight).to(device))
     else:
         raise NotImplementedError("%s is not implemented!" % cfg["MODEL"]["HEAD"]["LOSS"])
 
@@ -84,10 +86,11 @@ def main(cfg, output_path):
     train_acc = list()
     val_acc = list()
     
-    if cfg["TRAIN"]["AUTO_RESUME"] and os.path.exists(cfg["TRAIN"]["CKPT"]):
+    if cfg["TRAIN"]["AUTO_RESUME"] and cfg["TRAIN"]["CKPT"]:
         ckpt_file = cfg["TRAIN"]["CKPT"]
         if not ckpt_file.endswith(".pth"):
             ckpt_file = os.path.join(ckpt_file, "last.pth")
+        output_path = os.path.splitext(ckpt_file)[0]
         print("=> loading checkpoint from %s..." % ckpt_file)
         checkpoint = torch.load(ckpt_file, map_location=device)
         begin_epoch = checkpoint['epoch']
@@ -99,6 +102,17 @@ def main(cfg, output_path):
         optimizer.load_state_dict(checkpoint['optimizer'])
         print("=> loaded checkpoint '{}' (epoch {})".format(
             ckpt_file, checkpoint['epoch']))
+    else:
+        datetime_str = datetime.datetime.now().strftime("--%Y-%m-%d--%H-%M")
+        output_path = os.path.join(os.path.join(cfg["OUTPUT"], "train"),
+                                cfg["DATASET"]["NAME"] + "--" + 
+                                cfg["MODEL"]["BACKBONE"]["NAME"] + "--" +
+                                cfg["MODEL"]["NECK"] + "--" +
+                                cfg["MODEL"]["HEAD"]["NAME"] + "--" + 
+                                datetime_str)
+        os.makedirs(output_path, exist_ok=False)
+        with open(os.path.join(output_path, "configs.txt"), "w") as output_file:
+            json.dump(cfg, output_file)
 
     lr_scheduler = optim.lr_scheduler.MultiStepLR(
         optimizer, cfg["TRAIN"]["LR_STEP"], cfg["TRAIN"]["LR_FACTOR"],
@@ -176,6 +190,8 @@ def main(cfg, output_path):
         fig.savefig(os.path.join(output_path, 'confusion_matrix.png'),
                     bbox_inches='tight')
 
+        plt.close("all")
+
         print()
 
     print("Done training!")
@@ -198,15 +214,4 @@ if __name__ == "__main__":
             print(exc)
             quit()
 
-    datetime_str = datetime.datetime.now().strftime("--%Y-%m-%d--%H-%M")
-    output_path = os.path.join(os.path.join(cfg["OUTPUT"], "train"),
-                               cfg["DATASET"]["NAME"] + "--" + 
-                               cfg["MODEL"]["BACKBONE"]["NAME"] + "--" +
-                               cfg["MODEL"]["NECK"] + "--" +
-                               cfg["MODEL"]["HEAD"]["NAME"] + "--" + 
-                               datetime_str)
-    os.makedirs(output_path, exist_ok=False)
-    with open(os.path.join(output_path, "configs.txt"), "w") as output_file:
-        json.dump(cfg, output_file)
-
-    main(cfg, output_path)
+    main(cfg)

@@ -18,6 +18,16 @@ DATASET:
   - jpeg
   - png
   FLIP: true
+  GRAYSCALE: 0.05
+  COLORJITTER: 0.1
+  GAUSSIAN_BLUR: 0.05
+  PERSPECTIVE: 0.1
+  ROTATE: 
+    DEGREES: 
+    - -20 
+    - 20
+    PROB: 0.2
+  RANDOM_CROP: true
 
 MODEL:
   BACKBONE: 
@@ -40,13 +50,13 @@ TRAIN:
   AUTO_RESUME: true
   CKPT: 'path/to/checkpoint'
   PRETRAINED: "path/to/pretrained"
-  EPOCHS: 200
+  EPOCHS: 100
   EARLY_STOPPING:
-  LR: 0.1
+  LR: 0.01
   LR_FACTOR: 0.1
   LR_STEP:
-  - 100
-  - 150
+  - 70
+  - 90
   BATCH_SIZE: 32
   OPTIMIZER: "adam"
   MOMENTUM: 0.9
