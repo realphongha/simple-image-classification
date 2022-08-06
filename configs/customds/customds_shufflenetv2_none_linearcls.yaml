@@ -1,6 +1,6 @@
 GPUS: "0"
 WORKERS: 2
-OUTPUT: "output"
+OUTPUT: "outputs"
 
 CUDNN:
   BENCHMARK: true

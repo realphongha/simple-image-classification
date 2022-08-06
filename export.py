@@ -76,7 +76,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str, required=True, 
                         help='path to model weights')
-    parser.add_argument('--cfg', type=str, required=True, 
+    parser.add_argument('--config', type=str, required=True, 
                         help='path to config file')
     parser.add_argument('--format', type=str, default="onnx", 
                         help='format to export')
@@ -86,11 +86,11 @@ if __name__ == "__main__":
     parser.add_argument('--batch', type=int, default=1, help='batch size')
     parser.add_argument('--dynamic', action='store_true', 
                         help='dynamic axes')
-    parser.add_argument('--opset', type=int, default=12, 
+    parser.add_argument('--opset', type=int, default=11, 
                         help='ONNX: opset version')
     opt = parser.parse_args()
     
-    with open(opt.cfg, "r") as stream:
+    with open(opt.config, "r") as stream:
         try:
             cfg = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
