@@ -1,0 +1,14 @@
+
+torch~=1.8.1
+PyYAML==5.4.1
+tqdm
+scikit-learn
+pandas
+matplotlib~=3.3.4
+seaborn~=0.11.2
+
+## export:
+# onnx==1.10.2
+# onnxruntime==1.9.0
+# onnxruntime-gpu==1.9.0
+# mnn==1.1.6

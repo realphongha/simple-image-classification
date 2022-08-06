@@ -1,0 +1,59 @@
+GPUS: "0"
+WORKERS: 2
+OUTPUT: "output"
+
+CUDNN:
+  BENCHMARK: true
+  DETERMINISTIC: false
+  ENABLED: true
+
+DATASET: 
+  NAME: "customds"
+  TRAIN: "path/to/train"
+  VAL: "path/to/val"
+  CLS: "cat, dog"
+  NUM_CLS: 2
+  IMG_EXT:
+  - jpg
+  - jpeg
+  - png
+  FLIP: true
+
+MODEL:
+  BACKBONE: 
+    NAME: "shufflenetv2"
+    WIDEN_FACTOR: '1.0x'  # '0.5x', '1.0x', '1.5x', '2.0x'
+  NECK: "GlobalAveragePooling"
+  HEAD:
+    NAME: "LinearCls"
+    DROPOUT: 0.0
+    LOSS: "CrossEntropy"
+    LOSS_WEIGHT:
+    - 1.0
+    - 1.0
+  INPUT_SHAPE: 
+  - 224
+  - 224
+  FREEZE: ""  # backbone, neck or head; separated by ','; exp: "backbone, neck"
+
+TRAIN:
+  AUTO_RESUME: true
+  CKPT: 'path/to/checkpoint'
+  PRETRAINED: "path/to/pretrained"
+  EPOCHS: 200
+  EARLY_STOPPING:
+  LR: 0.1
+  LR_FACTOR: 0.1
+  LR_STEP:
+  - 100
+  - 150
+  BATCH_SIZE: 32
+  OPTIMIZER: "adam"
+  MOMENTUM: 0.9
+  WEIGHT_DECAY: 0.0001
+  SHUFFLE: true
+
+TEST:
+  BATCH_SIZE: 32
+  WEIGHTS: '/path/to/weights'
+  SHUFFLE: true
