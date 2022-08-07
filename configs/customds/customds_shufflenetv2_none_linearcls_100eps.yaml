@@ -1,6 +1,7 @@
 GPUS: "0"
 WORKERS: 2
 OUTPUT: "outputs"
+SAVE_ALL_EPOCHES: true  # false - only saves the last epoch, true - saves all
 
 CUDNN:
   BENCHMARK: true

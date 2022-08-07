@@ -90,7 +90,7 @@ def main(cfg):
         ckpt_file = cfg["TRAIN"]["CKPT"]
         if not ckpt_file.endswith(".pth"):
             ckpt_file = os.path.join(ckpt_file, "last.pth")
-        output_path = os.path.splitext(ckpt_file)[0]
+        output_path = os.path.split(ckpt_file)[0]
         print("=> loading checkpoint from %s..." % ckpt_file)
         checkpoint = torch.load(ckpt_file, map_location=device)
         begin_epoch = checkpoint['epoch']
@@ -153,7 +153,7 @@ def main(cfg):
             'perf': (best_acc, best_clf_report, best_conf_matrix, train_loss, val_loss, train_acc, val_acc),
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
-        }, best_model, output_path) 
+        }, best_model, output_path, cfg["SAVE_ALL_EPOCHES"]) 
 
         print()
 
