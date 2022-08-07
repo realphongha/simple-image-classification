@@ -4,11 +4,11 @@ Simple image classification with Pytorch. Currently supporting:
 * [ShuffleNet V2](https://arxiv.org/abs/1807.11164)
 * [ShuffleNet V2 Plus](https://github.com/megvii-model/ShuffleNet-Series)
 * [MobileNet V3](https://arxiv.org/abs/1905.02244)
-## Neck:
+## Necks:
 * [B-CNN](https://www.cv-foundation.org/openaccess/content_iccv_2015/html/Lin_Bilinear_CNN_Models_ICCV_2015_paper.html)
-## Head:
+## Heads:
 * Linear 
-## Loss function:
+## Loss functions:
 * Cross entropy
 ## Augmentation:
 * Horizontal flip
@@ -18,12 +18,12 @@ Simple image classification with Pytorch. Currently supporting:
 * Perspective
 * Rotate
 * Random crop
-## Convert and run in engine:
+## Converting and running models in engines:
 * ONNX
 ## to be added more soon...
 
 # Tutorial
-## Install:
+## Installation:
 Clone this repo:  
 `git clone https://github.com/realphongha/simple-image-classification.git`  
 Go in the repo and install requirements:  
@@ -31,7 +31,7 @@ Go in the repo and install requirements:
 `pip install -r requirements.txt`
 ## Training:
 Take the training process of the [Dogs vs Cats dataset](https://www.kaggle.com/competitions/dogs-vs-cats/code) as an example.
-### Prepare dataset:
+### Preparing dataset:
 Your dataset should be like this:  
 <pre>
 simple-image-classification/  
