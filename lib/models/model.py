@@ -41,8 +41,10 @@ class Model(nn.Module):
         for part in parts:
             if part not in ("backbone", "neck", "head"):
                 raise NotImplementedError("Cannot freeze %s!" % part)
-            for name, p in model.named_parameters():
+            print("Freezing %s..." % part)
+            for name, p in self.named_parameters():
                 if part in name:
+                    print("Freezing %s..." % name)
                     p.requires_grad = False
 
     def forward(self, x):
