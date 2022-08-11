@@ -31,8 +31,10 @@ class BaseDs(torch.utils.data.Dataset):
         label = self.labels[index]
         raw_img = cv2.imread(fp)
         pipeline = list()
+        safe_pipeline = list()  # safe transform pipeline for augmentation exception
         if self.cfg["DATASET"]["FLIP"]:
             pipeline.append(transforms.RandomHorizontalFlip(0.5))
+            safe_pipeline.append(transforms.RandomHorizontalFlip(0.5))
         if self.is_train:
             if self.cfg["DATASET"]["GRAYSCALE"] and self.cfg["DATASET"]["GRAYSCALE"] > random.random():
                 pipeline.append(transforms.Grayscale())
@@ -47,11 +49,18 @@ class BaseDs(torch.utils.data.Dataset):
         if self.is_train and self.cfg["DATASET"]["RANDOM_CROP"]:
             pipeline.append(transforms.Resize((int(self.input_shape[0]*8/7), int(self.input_shape[1]*8/7))))
             pipeline.append(transforms.RandomResizedCrop(self.input_shape))
+            safe_pipeline.append(transforms.Resize(self.input_shape))
         else:
             pipeline.append(transforms.Resize(self.input_shape))
+            safe_pipeline.append(transforms.Resize(self.input_shape))
         raw_img = cv2.cvtColor(raw_img, cv2.COLOR_BGR2RGB)
         raw_img = Image.fromarray(raw_img)
-        raw_img = transforms.Compose(pipeline)(raw_img)
+        try:
+            raw_img = transforms.Compose(pipeline)(raw_img)
+        except Exception as e:
+            print("Augmentation exception for", fp)
+            print(e)
+            raw_img = transforms.Compose(safe_pipeline)(raw_img)
         raw_img = np.array(raw_img)
         if len(raw_img.shape) == 2:
             raw_img = cv2.cvtColor(raw_img, cv2.COLOR_GRAY2RGB)

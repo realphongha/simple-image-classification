@@ -81,7 +81,7 @@ def main(cfg, output_path):
     df_cm = pd.DataFrame(conf_matrix, range(conf_matrix.shape[0]),
                         range(conf_matrix.shape[0]))
     sn.set(font_scale=1.4) # for label size
-    sn.heatmap(df_cm, annot=True, annot_kws={"size": 16}, fmt='g') # font size
+    sn.heatmap(df_cm, annot=True, annot_kws={"size": 8}, fmt='.3f') # font size
     fig.savefig(os.path.join(output_path, 'confusion_matrix.png'),
                 bbox_inches='tight')
 
