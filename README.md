@@ -4,6 +4,7 @@ Simple image classification with Pytorch. Currently supporting:
 * [ShuffleNet V2](https://arxiv.org/abs/1807.11164)
 * [ShuffleNet V2 Plus](https://github.com/megvii-model/ShuffleNet-Series)
 * [MobileNet V3](https://arxiv.org/abs/1905.02244)
+* [MobileOne](https://arxiv.org/abs/2206.04040)
 ## Necks:
 * [B-CNN](https://www.cv-foundation.org/openaccess/content_iccv_2015/html/Lin_Bilinear_CNN_Models_ICCV_2015_paper.html)
 ## Heads:

@@ -19,6 +19,14 @@ class Model(nn.Module):
                 cfg["TRAIN"]["PRETRAINED"] if training else None
             )
             self.out_channels = self.backbone.stage_out_channels[-1]
+        elif backbone_name == "mobileone":
+            self.backbone = get_mobileone(
+                cfg["DATASET"]["NUM_CLS"],
+                training,
+                cfg["MODEL"]["BACKBONE"]["WIDEN_FACTOR"],
+                cfg["TRAIN"]["PRETRAINED"] if training else None
+            )
+            self.out_channels = self.backbone.in_planes
         else:
             raise NotImplementedError("Backbone %s is not implemented!" % 
                 backbone_name)
@@ -57,7 +65,7 @@ class Model(nn.Module):
 if __name__ == "__main__":
     cfg = {
         "MODEL": {
-            "BACKBONE": {"NAME": "shufflenetv2", "WIDEN_FACTOR": "1.0x"},
+            "BACKBONE": {"NAME": "mobileone", "WIDEN_FACTOR": "s0"},
             "NECK": "B-CNN",
             "HEAD": {"NAME": "LinearCls", "DROPOUT": 0.0}
         }, 
