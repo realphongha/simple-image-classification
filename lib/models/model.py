@@ -15,10 +15,23 @@ class Model(nn.Module):
         self.nc = cfg["DATASET"]["NUM_CLS"]
         if backbone_name == "shufflenetv2":
             self.backbone = get_shufflenetv2(
-                cfg["MODEL"]["BACKBONE"]["WIDEN_FACTOR"], 
+                cfg["MODEL"]["BACKBONE"]["WIDEN_FACTOR"],
                 cfg["TRAIN"]["PRETRAINED"] if training else None
             )
             self.out_channels = self.backbone.stage_out_channels[-1]
+        elif backbone_name == "shufflenetv2_plus":
+            self.backbone = get_shufflenetv2_plus(
+                cfg["MODEL"]["INPUT_SHAPE"],
+                cfg["DATASET"]["NUM_CLS"],
+                cfg["MODEL"]["BACKBONE"]["WIDEN_FACTOR"],
+                cfg["TRAIN"]["PRETRAINED"] if training else None
+            )
+            self.out_channels = self.backbone.stage_out_channels[-1]
+        elif backbone_name == "mobilenetv3":
+            self.backbone, self.out_channels = get_mobilenet_v3(
+                cfg["MODEL"]["BACKBONE"]["WIDEN_FACTOR"],
+                cfg["TRAIN"]["PRETRAINED"] if training else None
+            )
         elif backbone_name == "mobileone":
             self.backbone = get_mobileone(
                 cfg["DATASET"]["NUM_CLS"],
@@ -28,7 +41,7 @@ class Model(nn.Module):
             )
             self.out_channels = self.backbone.in_planes
         else:
-            raise NotImplementedError("Backbone %s is not implemented!" % 
+            raise NotImplementedError("Backbone %s is not implemented!" %
                 backbone_name)
         if self.neck_name == "GlobalAveragePooling":
             self.neck = nn.AvgPool2d(7)
@@ -36,14 +49,14 @@ class Model(nn.Module):
             self.neck = BCnnNeck()
             self.out_channels **= 2
         else:
-            raise NotImplementedError("Neck %s is not implemented!" % 
+            raise NotImplementedError("Neck %s is not implemented!" %
                 self.neck_name)
         if self.head_name == "LinearCls":
-            self.head = LinearClsHead(self.out_channels, self.nc, 
+            self.head = LinearClsHead(self.out_channels, self.nc,
                 cfg["MODEL"]["HEAD"]["DROPOUT"])
         else:
-            raise NotImplementedError("Head %s is not implemented!" % 
-                self.head_name)        
+            raise NotImplementedError("Head %s is not implemented!" %
+                self.head_name)
 
     def freeze(self, parts):
         for part in parts:
@@ -68,7 +81,7 @@ if __name__ == "__main__":
             "BACKBONE": {"NAME": "mobileone", "WIDEN_FACTOR": "s0"},
             "NECK": "B-CNN",
             "HEAD": {"NAME": "LinearCls", "DROPOUT": 0.0}
-        }, 
+        },
         "DATASET": {"NUM_CLS": 2},
         "TRAIN": {"PRETRAINED": None}
     }
@@ -79,4 +92,3 @@ if __name__ == "__main__":
     test_outputs = model(test_data)
     print(test_outputs)
     print(test_outputs.size())
-        

@@ -57,7 +57,10 @@ def main(cfg, output_path):
 
     if cfg["MODEL"]["HEAD"]["LOSS"] == "CrossEntropy":
         loss_weight = cfg["MODEL"]["HEAD"]["LOSS_WEIGHT"]
-        criterion = CrossEntropyLoss(weight=torch.Tensor(loss_weight).to(device))
+        if loss_weight:
+            criterion = CrossEntropyLoss(weight=torch.Tensor(loss_weight).to(device))
+        else:
+            criterion = CrossEntropyLoss()
     else:
         raise NotImplementedError("%s is not implemented!" % cfg["MODEL"]["HEAD"]["LOSS"])
 
@@ -78,7 +81,7 @@ def main(cfg, output_path):
     df_cm = pd.DataFrame(conf_matrix, range(conf_matrix.shape[0]),
                         range(conf_matrix.shape[0]))
     sn.set(font_scale=1.4) # for label size
-    sn.heatmap(df_cm, annot=True, annot_kws={"size": 16}, fmt='g') # font size
+    sn.heatmap(df_cm, annot=True, annot_kws={"size": 8}, fmt='.3f') # font size
     fig.savefig(os.path.join(output_path, 'confusion_matrix.png'),
                 bbox_inches='tight')
 
@@ -100,10 +103,10 @@ if __name__ == "__main__":
 
     datetime_str = datetime.datetime.now().strftime("--%Y-%m-%d--%H-%M")
     output_path = os.path.join(os.path.join(cfg["OUTPUT"], "val"),
-                               cfg["DATASET"]["NAME"] + "--" + 
+                               cfg["DATASET"]["NAME"] + "--" +
                                cfg["MODEL"]["BACKBONE"]["NAME"] + "--" +
                                cfg["MODEL"]["NECK"] + "--" +
-                               cfg["MODEL"]["HEAD"]["NAME"] + "--" + 
+                               cfg["MODEL"]["HEAD"]["NAME"] + "--" +
                                datetime_str)
     os.makedirs(output_path, exist_ok=False)
     with open(os.path.join(output_path, "configs.txt"), "w") as output_file:

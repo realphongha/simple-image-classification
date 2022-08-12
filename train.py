@@ -72,7 +72,10 @@ def main(cfg):
 
     if cfg["MODEL"]["HEAD"]["LOSS"] == "CrossEntropy":
         loss_weight = cfg["MODEL"]["HEAD"]["LOSS_WEIGHT"]
-        criterion = CrossEntropyLoss(weight=torch.Tensor(loss_weight).to(device))
+        if loss_weight:
+            criterion = CrossEntropyLoss(weight=torch.Tensor(loss_weight).to(device))
+        else:
+            criterion = CrossEntropyLoss()
     else:
         raise NotImplementedError("%s is not implemented!" % cfg["MODEL"]["HEAD"]["LOSS"])
 
@@ -85,7 +88,7 @@ def main(cfg):
     val_loss = list()
     train_acc = list()
     val_acc = list()
-    
+
     if cfg["TRAIN"]["AUTO_RESUME"] and cfg["TRAIN"]["CKPT"]:
         ckpt_file = cfg["TRAIN"]["CKPT"]
         if not ckpt_file.endswith(".pth"):
@@ -105,10 +108,10 @@ def main(cfg):
     else:
         datetime_str = datetime.datetime.now().strftime("--%Y-%m-%d--%H-%M")
         output_path = os.path.join(os.path.join(cfg["OUTPUT"], "train"),
-                                cfg["DATASET"]["NAME"] + "--" + 
+                                cfg["DATASET"]["NAME"] + "--" +
                                 cfg["MODEL"]["BACKBONE"]["NAME"] + "--" +
                                 cfg["MODEL"]["NECK"] + "--" +
-                                cfg["MODEL"]["HEAD"]["NAME"] + "--" + 
+                                cfg["MODEL"]["HEAD"]["NAME"] + "--" +
                                 datetime_str)
         os.makedirs(output_path, exist_ok=False)
         with open(os.path.join(output_path, "configs.txt"), "w") as output_file:
@@ -128,7 +131,7 @@ def main(cfg):
 
     for epoch in range(begin_epoch, cfg["TRAIN"]["EPOCHS"]):
         print("EPOCH %i:" % epoch)
-        
+
         # trains
         f1, acc, loss, conf_matrix = train(model, criterion, optimizer, train_loader, device)
         train_acc.append(acc)
@@ -153,7 +156,7 @@ def main(cfg):
             'perf': (best_acc, best_clf_report, best_conf_matrix, train_loss, val_loss, train_acc, val_acc),
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
-        }, best_model, output_path, cfg["SAVE_ALL_EPOCHES"]) 
+        }, best_model, output_path, cfg["SAVE_ALL_EPOCHES"])
 
         print()
 
@@ -186,7 +189,7 @@ def main(cfg):
         df_cm = pd.DataFrame(best_conf_matrix, range(best_conf_matrix.shape[0]),
                             range(best_conf_matrix.shape[0]))
         sn.set(font_scale=1.4) # for label size
-        sn.heatmap(df_cm, annot=True, annot_kws={"size": 16}, fmt='g') # font size
+        sn.heatmap(df_cm, annot=True, annot_kws={"size": 8}, fmt='.3f') # font size
         fig.savefig(os.path.join(output_path, 'confusion_matrix.png'),
                     bbox_inches='tight')
 
