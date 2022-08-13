@@ -3,6 +3,7 @@ import collections
 
 
 def load_checkpoint(model, checkpoint, strict=False):
+    print("Loading weights from %s..." % checkpoint)
     checkpoint = torch.load(checkpoint,
                             map_location=lambda storage, loc: storage)
     checkpoint = checkpoint["state_dict"] if "state_dict" in checkpoint else checkpoint
@@ -34,4 +35,4 @@ def load_checkpoint(model, checkpoint, strict=False):
     model.load_state_dict(new_target_state, strict=strict)
 
     return model
-    
+
