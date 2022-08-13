@@ -35,7 +35,7 @@ def train(model, criterion, optimizer, train_loader, device):
     f1 = f1_score(gt, pred, average="macro")
     print("Macro avg F1 score:", f1)
     print(classification_report(gt, pred))
-    conf_matrix = confusion_matrix(gt, pred)
+    conf_matrix = confusion_matrix(gt, pred, normalize="true")
 
     return f1, acc, mean_loss, conf_matrix
 
@@ -70,7 +70,7 @@ def evaluate(model, criterion, val_loader, device, log=True):
     clf_report = classification_report(gt, pred)
     if log:
         print(clf_report)
-    conf_matrix = confusion_matrix(gt, pred)
+    conf_matrix = confusion_matrix(gt, pred, normalize="true")
 
     return f1, acc, clf_report, mean_loss, conf_matrix
-    
+
