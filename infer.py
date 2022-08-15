@@ -2,8 +2,10 @@ import os
 import time
 import argparse
 import yaml
+import shutil
 import cv2
 import numpy as np
+from object_detection import OBJ_DET_MODELS, draw_bbox
 from abc import ABCMeta, abstractmethod
 
 
@@ -80,6 +82,24 @@ class ClassiferTorch(ClassifierAbs):
         cls, cls_prob = self._postprocess(np_output)
         return cls, cls_prob, np.mean(speed)
 
+    def infer_batch(self, imgs):
+        for i in range(len(imgs)):
+            imgs[i] = self._preprocess(imgs[i])
+        inp = np.concatenate(imgs, axis=0)
+        inp = self.torch.Tensor(inp).float().to(self.device)
+        speed = list()
+        for _ in range(10):
+            begin = time.time()
+            outputs = self.model(inp)
+            speed.append(time.time()-begin)
+        clss, cls_probs = list(), list()
+        for output in outputs:
+            np_output = output.cpu().detach().numpy() if output.requires_grad else output.cpu().numpy()
+            cls, cls_prob = self._postprocess(np_output)
+            clss.append(cls)
+            cls_probs.append(cls_prob)
+        return clss, cls_probs, np.mean(speed)/len(imgs)
+
 
 class ClassiferOnnx(ClassifierAbs):
     def __init__(self, model_path, input_shape, device):
@@ -98,6 +118,22 @@ class ClassiferOnnx(ClassifierAbs):
             speed.append(time.time()-begin)
         cls, cls_prob = self._postprocess(output)
         return cls, cls_prob, np.mean(speed)
+
+    def infer_batch(self, imgs):
+        for i in range(len(imgs)):
+            imgs[i] = self._preprocess(imgs[i])
+        inp = np.concatenate(imgs, axis=0)
+        speed = list()
+        for _ in range(10):
+            begin = time.time()
+            np_outputs = self.ort_session.run(None, {self.input_name: inp})[0]
+            speed.append(time.time()-begin)
+        clss, cls_probs = list(), list()
+        for np_output in np_outputs:
+            cls, cls_prob = self._postprocess(np_output)
+            clss.append(cls)
+            cls_probs.append(cls_prob)
+        return clss, cls_probs, np.mean(speed)/len(imgs)
 
 
 def main(opt):
@@ -121,22 +157,113 @@ def main(opt):
         engine = ClassiferOnnx(opt.model, opt.input_shape, opt.device)
     else:
         raise NotImplementedError("Engine %s is not supported!" % opt.engine)
-    
-    img = cv2.imread(opt.image)
-    cls, cls_prob, latency = engine.infer(img)
+    det_engine = None
+    if opt.det == "yolov5":
+        det_engine = OBJ_DET_MODELS["yolov5"](opt.det_model, opt.det_cls,
+            opt.det_num_cls, opt.det_engine, opt.det_input, opt.device, 
+            opt.det_conf, opt.det_iou)
+    else:
+        print("Do not use object detection")
 
-    print("Result:")
-    print("Class: %i, score: %.4f" % (cls, cls_prob[cls]))
-    print("Classes probability:", cls_prob)
-    print("Latency: %.2f, FPS: %.2f" % (latency, 1/latency))
+    if opt.src == "image":
+        img = cv2.imread(opt.src_path)
+        cls, cls_prob, latency = engine.infer(img)
+
+        print("Result:")
+        cls_name = opt.cls[cls] if opt.cls else cls
+        print("Class: %i (%s), score: %.4f" % (cls, cls_name, cls_prob[cls]))
+        print("Classes probability:", cls_prob)
+        print("Latency: %.4f, FPS: %.2f" % (latency, 1/latency))
+    elif opt.src == "folder":
+        for fn in os.listdir(opt.src_path):
+            print("File:", fn)
+            fp = os.path.join(opt.src_path, fn)
+            img = cv2.imread(fp)
+            try:
+                cls, cls_prob, latency = engine.infer(img)
+            except Exception as e:
+                print(e)
+                print("Ignoring %s..." % fn)
+                continue
+            # print("Result:")
+            cls_name = opt.cls[cls] if opt.cls else cls
+            print("Class: %i (%s), score: %.4f" % (cls, cls_name, cls_prob[cls]))
+            # print("Classes probability:", cls_prob)
+            print("Latency: %.4f, FPS: %.2f" % (latency, 1/latency))
+            if opt.dst_path:
+                lbl_dir = os.path.join(opt.dst_path, cls_name)
+                os.makedirs(lbl_dir, exist_ok=True)
+                print("Copying %s to %s..." % (fn, lbl_dir))
+                shutil.copy(fp, lbl_dir)
+    elif opt.src == "video":
+        if det_engine is None:
+            print("Please specify object detector for video source!")
+            quit()
+        cap = cv2.VideoCapture(opt.src_path)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        ext = "." + opt.src_path.split(".")[-1]
+        dst_path = opt.src_path.replace(ext, "_result" + ext)
+        writer = cv2.VideoWriter(dst_path, cv2.VideoWriter_fourcc(*'mp4v'), 
+            10, (width, height))
+        if (cap.isOpened()== False):
+            print("Error opening video stream or file")
+        count = 0
+        while cap.isOpened():
+            count += 1
+            print("Processing frame %i/%i" % (count, length))
+            ret, frame = cap.read()
+            if not ret: break
+            boxes = det_engine.infer(frame.copy())
+            if opt.batch:
+                imgs = list()
+                for box in boxes:
+                    x1, y1, x2, y2 = box[:4]
+                    x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                    obj = frame[y1:y2, x1:x2]
+                    imgs.append(obj)
+                clss, cls_probs, latency = engine.infer_batch(imgs)
+                print("Latency: %.4f" % latency)
+                for i in range(len(clss)):
+                    x1, y1, x2, y2 = boxes[i][:4]
+                    x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                    cls, cls_prob = clss[i], cls_probs[i]
+                    cls_name = opt.cls[cls] if opt.cls else cls
+                    cls_str = "%s %.2f" % (cls_name, cls_prob[cls])
+                    frame = draw_bbox(frame, cls_str, (x1, y1), (x2, y2))
+            else:
+                for box in boxes:
+                    x1, y1, x2, y2 = box[:4]
+                    x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                    obj = frame[y1:y2, x1:x2]
+                    cls, cls_prob, latency = engine.infer(obj)
+                    print("Latency: %.4f" % latency)
+                    cls_name = opt.cls[cls] if opt.cls else cls
+                    cls_str = "%s %.2f" % (cls_name, cls_prob[cls])
+                    frame = draw_bbox(frame, cls_str, (x1, y1), (x2, y2))
+            cv2.imshow("Test", frame)
+            writer.write(frame)
+            if cv2.waitKey(10) & 0xFF == ord('q'):
+                break
+        cap.release()
+        writer.release()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--image',
+    parser.add_argument('--src',
+                        type=str,
+                        default='image',
+                        help='source type (image, folder, video)')
+    parser.add_argument('--src-path',
                         type=str,
                         default='examples/images/cat.jpeg',
-                        help='path to image')
+                        help='path to source')
+    parser.add_argument('--dst-path',
+                        type=str,
+                        default=None,
+                        help='path to save labels (folder src type only)')
     parser.add_argument('--engine',
                         type=str,
                         default='onnx',
@@ -150,13 +277,52 @@ if __name__ == "__main__":
                         type=int, 
                         default=(224, 224), 
                         help='input shape for classification model')
-    parser.add_argument('--device',
+    parser.add_argument('--cls',
                         type=str,
-                        default='cpu',
-                        help='device to run infer on')
+                        nargs="+",
+                        help='class names for classification')
+    parser.add_argument('--batch', action='store_true', 
+                        help='use batch for classification')
     parser.add_argument('--config',
                         type=str,
                         default='configs/customds/dogsvscats_shufflenetv2_none_linearcls_10eps.yaml',
                         help='path to config file (only for torch engine)')
+    parser.add_argument('--det',
+                        type=str,
+                        default=None,
+                        help='object detection model, leave it blank to ignore detection')
+    parser.add_argument('--det-engine',
+                        type=str,
+                        default='onnx',
+                        help='engine type for object detection (onnx, mnn, torch)')
+    parser.add_argument('--det-model',
+                        type=str,
+                        default='weights/yolov5.onnx',
+                        help='path to object detection model weights')
+    parser.add_argument('--det-cls',
+                        type=int,
+                        nargs="+",
+                        help='classes for object detection')
+    parser.add_argument('--det-num-cls',
+                        type=int,
+                        help='numnber of classes for object detection model')
+    parser.add_argument('--det-input',
+                        type=int,
+                        nargs="+",
+                        default=[640, 640],
+                        help='object detection input shape')
+    parser.add_argument('--det-conf',
+                        type=float,
+                        default=0.25,
+                        help='object detection conf threshold')
+    parser.add_argument('--det-iou',
+                        type=float,
+                        default=0.55,
+                        help='object detection iou threshold')
+    parser.add_argument('--device',
+                        type=str,
+                        default='cpu',
+                        help='device to run infer on')
+    
     opt = parser.parse_args()
     main(opt)

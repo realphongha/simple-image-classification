@@ -1,5 +1,6 @@
 # projects
 outputs/*
+object_detection/*.yaml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -129,3 +130,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# MacOS
+.DS_Store

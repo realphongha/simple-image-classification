@@ -55,12 +55,18 @@ def main(opt, cfg):
     device = torch.device(opt.device)
     if not torch.cuda.is_available():
         device = 'cpu'
-    model = Model(cfg, training=False)
+    if cfg["MODEL"]["BACKBONE"]["NAME"] == "mobileone":
+        cfg["TRAIN"]["PRETRAINED"] = False
+        model = Model(cfg, training=True)
+    else:
+        model = Model(cfg, training=False)
     weights_path = opt.weights
     if not weights_path:
         raise Exception("Please specify path to model weights in config file!")
     weights = torch.load(weights_path, map_location=device)
     model.load_state_dict(weights['state_dict'] if 'state_dict' in weights else weights)
+    if cfg["MODEL"]["BACKBONE"]["NAME"] == "mobileone":
+        model.backbone = model.backbone.reparameterize_model()
     model.to(device)
     model.eval()
         
