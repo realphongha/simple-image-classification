@@ -175,26 +175,27 @@ def main(opt):
         print("Classes probability:", cls_prob)
         print("Latency: %.4f, FPS: %.2f" % (latency, 1/latency))
     elif opt.src == "folder":
-        for fn in os.listdir(opt.src_path):
-            print("File:", fn)
-            fp = os.path.join(opt.src_path, fn)
-            img = cv2.imread(fp)
-            try:
-                cls, cls_prob, latency = engine.infer(img)
-            except Exception as e:
-                print(e)
-                print("Ignoring %s..." % fn)
-                continue
-            # print("Result:")
-            cls_name = opt.cls[cls] if opt.cls else cls
-            print("Class: %i (%s), score: %.4f" % (cls, cls_name, cls_prob[cls]))
-            # print("Classes probability:", cls_prob)
-            print("Latency: %.4f, FPS: %.2f" % (latency, 1/latency))
-            if opt.dst_path:
-                lbl_dir = os.path.join(opt.dst_path, cls_name)
-                os.makedirs(lbl_dir, exist_ok=True)
-                print("Copying %s to %s..." % (fn, lbl_dir))
-                shutil.copy(fp, lbl_dir)
+        for fd in opt.src_path:
+            for fn in os.listdir(fd):
+                print("File:", fn)
+                fp = os.path.join(fd, fn)
+                img = cv2.imread(fp)
+                try:
+                    cls, cls_prob, latency = engine.infer(img)
+                except Exception as e:
+                    print(e)
+                    print("Ignoring %s..." % fn)
+                    continue
+                # print("Result:")
+                cls_name = opt.cls[cls] if opt.cls else cls
+                print("Class: %i (%s), score: %.4f" % (cls, cls_name, cls_prob[cls]))
+                # print("Classes probability:", cls_prob)
+                print("Latency: %.4f, FPS: %.2f" % (latency, 1/latency))
+                if opt.dst_path:
+                    lbl_dir = os.path.join(opt.dst_path, cls_name)
+                    os.makedirs(lbl_dir, exist_ok=True)
+                    print("Copying %s to %s..." % (fn, lbl_dir))
+                    shutil.copy(fp, lbl_dir)
     elif opt.src == "video":
         if det_engine is None:
             print("Please specify object detector for video source!")
@@ -262,6 +263,7 @@ if __name__ == "__main__":
                         help='path to source')
     parser.add_argument('--dst-path',
                         type=str,
+                        nargs="+",
                         default=None,
                         help='path to save labels (folder src type only)')
     parser.add_argument('--engine',
