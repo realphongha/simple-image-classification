@@ -53,12 +53,18 @@ class ClassiferTorch(ClassifierAbs):
         self.device = device
         print("Start infering using device: %s" % device)
         print("Config:", cfg)
-        self.model = Model(cfg, training=False)
+        if cfg["MODEL"]["BACKBONE"]["NAME"] == "mobileone":
+            cfg["TRAIN"]["PRETRAINED"] = False
+            self.model = Model(cfg, training=True)
+        else:
+            self.model = Model(cfg, training=False)
         weights_path = cfg["TEST"]["WEIGHTS"]
         if not weights_path:
             raise Exception("Please specify path to model weights in config file!")
         weights = torch.load(weights_path, map_location=device)
         self.model.load_state_dict(weights['state_dict'] if 'state_dict' in weights else weights)
+        if cfg["MODEL"]["BACKBONE"]["NAME"] == "mobileone":
+            self.model.backbone = self.model.backbone.reparameterize_model()
         self.model.to(device)
         self.model.eval()
 
