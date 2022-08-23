@@ -16,6 +16,7 @@ from torch.nn import CrossEntropyLoss
 
 from lib.datasets import DATASETS
 from lib.models.model import Model
+from lib.losses import LOSSES
 from lib.tools import train, evaluate
 from lib.utils import save_checkpoint
 
@@ -76,6 +77,14 @@ def main(cfg):
             criterion = CrossEntropyLoss(weight=torch.Tensor(loss_weight).to(device))
         else:
             criterion = CrossEntropyLoss()
+    elif cfg["MODEL"]["HEAD"]["LOSS"] == "FocalLoss":
+        gamma = cfg["MODEL"]["HEAD"]["LOSS_GAMMA"]
+        alpha = cfg["MODEL"]["HEAD"]["LOSS_ALPHA"]
+        if not gamma:
+            gamma = 2
+        if not alpha:
+            alpha = None
+        criterion = LOSSES["FocalLoss"](gamma=gamma, alpha=alpha)
     else:
         raise NotImplementedError("%s is not implemented!" % cfg["MODEL"]["HEAD"]["LOSS"])
 

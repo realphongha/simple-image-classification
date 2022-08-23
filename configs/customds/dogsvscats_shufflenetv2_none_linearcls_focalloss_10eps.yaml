@@ -1,0 +1,71 @@
+GPUS: "0"
+WORKERS: 2
+OUTPUT: "outputs"
+SAVE_ALL_EPOCHES: true  # false - only saves the last epoch, true - saves all
+
+CUDNN:
+  BENCHMARK: true
+  DETERMINISTIC: false
+  ENABLED: true
+
+DATASET: 
+  NAME: "customds"
+  TRAIN: "data/dogs-vs-cats/train"
+  VAL: "data/dogs-vs-cats/val"
+  CLS: "cat, dog"
+  NUM_CLS: 2
+  IMG_EXT:
+  - jpg
+  - jpeg
+  - png
+  FLIP: true
+  GRAYSCALE: 0.05
+  COLORJITTER: 0.1
+  GAUSSIAN_BLUR: 0.05
+  PERSPECTIVE: 0.1
+  ROTATE: 
+    DEGREES: 
+    - -20 
+    - 20
+    PROB: 0.2
+  RANDOM_CROP: true
+
+MODEL:
+  BACKBONE: 
+    NAME: "shufflenetv2"
+    WIDEN_FACTOR: '1.0x'  # '0.5x', '1.0x', '1.5x', '2.0x'
+  NECK: "GlobalAveragePooling"
+  HEAD:
+    NAME: "LinearCls"
+    DROPOUT: 0.0
+    LOSS: "FocalLoss"
+    LOSS_ALPHA:
+    - 1.0
+    - 1.0
+    LOSS_GAMMA: 2
+  INPUT_SHAPE: 
+  - 224
+  - 224
+  FREEZE: ""  # backbone, neck or head; separated by ','; exp: "backbone, neck"
+
+TRAIN:
+  AUTO_RESUME: true
+  CKPT: 
+  PRETRAINED: "pretrained/ShuffleNetV2.1.0x.pth.tar"
+  EPOCHS: 10
+  EARLY_STOPPING:
+  LR: 0.001
+  LR_FACTOR: 0.1
+  LR_STEP:
+  - 5
+  - 8
+  BATCH_SIZE: 32
+  OPTIMIZER: "adam"
+  MOMENTUM: 0.9
+  WEIGHT_DECAY: 0.0001
+  SHUFFLE: true
+
+TEST:
+  BATCH_SIZE: 32
+  WEIGHTS: 'weights/dogsvscats_shufflenetv2_none_linearcls_10eps.pth'
+  SHUFFLE: true
