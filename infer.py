@@ -37,88 +37,94 @@ def main(opt):
         print("Do not use object detection")
 
     if opt.src == "image":
-        img = cv2.imread(opt.src_path)
-        cls, cls_prob, latency = engine.infer(img, 10)
+        for img in opt.src_path:
+            print("Image:", img)
+            img = cv2.imread(img)
+            cls, cls_prob, latency = engine.infer(img)
 
-        print("Result:")
-        cls_name = opt.cls[cls] if opt.cls else cls
-        print("Class: %i (%s), score: %.4f" % (cls, cls_name, cls_prob[cls]))
-        print("Classes probability:", cls_prob)
-        print("Latency: %.4f, FPS: %.2f" % (latency, 1/latency))
-    elif opt.src == "folder":
-        for fn in os.listdir(opt.src_path):
-            print("File:", fn)
-            fp = os.path.join(opt.src_path, fn)
-            img = cv2.imread(fp)
-            try:
-                cls, cls_prob, latency = engine.infer(img, 10)
-            except Exception as e:
-                print(e)
-                print("Ignoring %s..." % fn)
-                continue
-            # print("Result:")
+            print("Result:")
             cls_name = opt.cls[cls] if opt.cls else cls
             print("Class: %i (%s), score: %.4f" % (cls, cls_name, cls_prob[cls]))
-            # print("Classes probability:", cls_prob)
+            print("Classes probability:", cls_prob)
             print("Latency: %.4f, FPS: %.2f" % (latency, 1/latency))
-            if opt.dst_path:
-                lbl_dir = os.path.join(opt.dst_path, cls_name)
-                os.makedirs(lbl_dir, exist_ok=True)
-                print("Copying %s to %s..." % (fn, lbl_dir))
-                shutil.copy(fp, lbl_dir)
+    elif opt.src == "folder":
+        for fd in opt.src_path:
+            print("Folder:", fd)
+            for fn in os.listdir(fd):
+                print("File:", fn)
+                fp = os.path.join(fd, fn)
+                img = cv2.imread(fp)
+                try:
+                    cls, cls_prob, latency = engine.infer(img)
+                except Exception as e:
+                    print(e)
+                    print("Ignoring %s..." % fn)
+                    continue
+                # print("Result:")
+                cls_name = opt.cls[cls] if opt.cls else cls
+                print("Class: %i (%s), score: %.4f" % (cls, cls_name, cls_prob[cls]))
+                # print("Classes probability:", cls_prob)
+                print("Latency: %.4f, FPS: %.2f" % (latency, 1/latency))
+                if opt.dst_path:
+                    lbl_dir = os.path.join(opt.dst_path, cls_name)
+                    os.makedirs(lbl_dir, exist_ok=True)
+                    print("Copying %s to %s..." % (fn, lbl_dir))
+                    shutil.copy(fp, lbl_dir)
     elif opt.src == "video":
         if det_engine is None:
             print("Please specify object detector for video source!")
             quit()
-        cap = cv2.VideoCapture(opt.src_path)
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        ext = "." + opt.src_path.split(".")[-1]
-        dst_path = opt.src_path.replace(ext, "_result" + ext)
-        writer = cv2.VideoWriter(dst_path, cv2.VideoWriter_fourcc(*'mp4v'), 
-            10, (width, height))
-        if (cap.isOpened()== False):
-            print("Error opening video stream or file")
-        count = 0
-        while cap.isOpened():
-            count += 1
-            print("Processing frame %i/%i" % (count, length))
-            ret, frame = cap.read()
-            if not ret: break
-            boxes = det_engine.infer(frame.copy(), 10)
-            if opt.batch:
-                imgs = list()
-                for box in boxes:
-                    x1, y1, x2, y2 = box[:4]
-                    x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-                    obj = frame[y1:y2, x1:x2]
-                    imgs.append(obj)
-                clss, cls_probs, latency = engine.infer_batch(imgs, 10)
-                print("Latency: %.4f" % latency)
-                for i in range(len(clss)):
-                    x1, y1, x2, y2 = boxes[i][:4]
-                    x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-                    cls, cls_prob = clss[i], cls_probs[i]
-                    cls_name = opt.cls[cls] if opt.cls else cls
-                    cls_str = "%s %.2f" % (cls_name, cls_prob[cls])
-                    frame = draw_bbox(frame, cls_str, (x1, y1), (x2, y2))
-            else:
-                for box in boxes:
-                    x1, y1, x2, y2 = box[:4]
-                    x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-                    obj = frame[y1:y2, x1:x2]
-                    cls, cls_prob, latency = engine.infer(obj, 10)
+        for vid in opt.src_path:
+            print("Video:", vid)
+            cap = cv2.VideoCapture(vid)
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            ext = "." + vid.split(".")[-1]
+            dst_path = vid.replace(ext, "_result" + ext)
+            writer = cv2.VideoWriter(dst_path, cv2.VideoWriter_fourcc(*'mp4v'), 
+                10, (width, height))
+            if (cap.isOpened()== False):
+                print("Error opening video stream or file")
+            count = 0
+            while cap.isOpened():
+                count += 1
+                print("Processing frame %i/%i" % (count, length))
+                ret, frame = cap.read()
+                if not ret: break
+                boxes = det_engine.infer(frame.copy())
+                if opt.batch:
+                    imgs = list()
+                    for box in boxes:
+                        x1, y1, x2, y2 = box[:4]
+                        x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                        obj = frame[y1:y2, x1:x2]
+                        imgs.append(obj)
+                    clss, cls_probs, latency = engine.infer_batch(imgs)
                     print("Latency: %.4f" % latency)
-                    cls_name = opt.cls[cls] if opt.cls else cls
-                    cls_str = "%s %.2f" % (cls_name, cls_prob[cls])
-                    frame = draw_bbox(frame, cls_str, (x1, y1), (x2, y2))
-            cv2.imshow("Test", frame)
-            writer.write(frame)
-            if cv2.waitKey(10) & 0xFF == ord('q'):
-                break
-        cap.release()
-        writer.release()
+                    for i in range(len(clss)):
+                        x1, y1, x2, y2 = boxes[i][:4]
+                        x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                        cls, cls_prob = clss[i], cls_probs[i]
+                        cls_name = opt.cls[cls] if opt.cls else cls
+                        cls_str = "%s %.2f" % (cls_name, cls_prob[cls])
+                        frame = draw_bbox(frame, cls_str, (x1, y1), (x2, y2))
+                else:
+                    for box in boxes:
+                        x1, y1, x2, y2 = box[:4]
+                        x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                        obj = frame[y1:y2, x1:x2]
+                        cls, cls_prob, latency = engine.infer(obj)
+                        print("Latency: %.4f" % latency)
+                        cls_name = opt.cls[cls] if opt.cls else cls
+                        cls_str = "%s %.2f" % (cls_name, cls_prob[cls])
+                        frame = draw_bbox(frame, cls_str, (x1, y1), (x2, y2))
+                cv2.imshow("Test", frame)
+                writer.write(frame)
+                if cv2.waitKey(10) & 0xFF == ord('q'):
+                    break
+            cap.release()
+            writer.release()
 
 
 if __name__ == "__main__":
@@ -129,6 +135,7 @@ if __name__ == "__main__":
                         help='source type (image, folder, video)')
     parser.add_argument('--src-path',
                         type=str,
+                        nargs="+",
                         default='examples/images/cat.jpeg',
                         help='path to source')
     parser.add_argument('--dst-path',
