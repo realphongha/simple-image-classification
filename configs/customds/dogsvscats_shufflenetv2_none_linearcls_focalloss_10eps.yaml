@@ -68,4 +68,5 @@ TRAIN:
 TEST:
   BATCH_SIZE: 32
   WEIGHTS: 'weights/dogsvscats_shufflenetv2_none_linearcls_10eps.pth'
+  METRIC: 'acc'
   SHUFFLE: true
