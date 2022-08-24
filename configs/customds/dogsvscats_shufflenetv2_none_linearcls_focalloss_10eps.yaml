@@ -38,10 +38,11 @@ MODEL:
   HEAD:
     NAME: "LinearCls"
     DROPOUT: 0.0
-    LOSS: "CrossEntropy"
-    LOSS_WEIGHT:
+    LOSS: "FocalLoss"
+    LOSS_ALPHA:
     - 1.0
     - 1.0
+    LOSS_GAMMA: 2
   INPUT_SHAPE: 
   - 224
   - 224

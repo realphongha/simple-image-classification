@@ -67,6 +67,8 @@ def main(opt, cfg):
     model.load_state_dict(weights['state_dict'] if 'state_dict' in weights else weights)
     if cfg["MODEL"]["BACKBONE"]["NAME"] == "mobileone":
         model.backbone = model.backbone.reparameterize_model()
+    if opt.remove_fc:
+        model.remove_fc()
     model.to(device)
     model.eval()
         
@@ -92,6 +94,8 @@ if __name__ == "__main__":
     parser.add_argument('--batch', type=int, default=1, help='batch size')
     parser.add_argument('--dynamic', action='store_true', 
                         help='dynamic axes')
+    parser.add_argument('--remove-fc', action='store_true', 
+                        help='remove fully connected layers')
     parser.add_argument('--opset', type=int, default=11, 
                         help='ONNX: opset version')
     opt = parser.parse_args()

@@ -16,6 +16,7 @@ from torch.nn import CrossEntropyLoss
 
 from lib.datasets import DATASETS
 from lib.models.model import Model
+from lib.losses import LOSSES
 from lib.tools import train, evaluate
 from lib.utils import save_checkpoint
 
@@ -76,9 +77,18 @@ def main(cfg):
             criterion = CrossEntropyLoss(weight=torch.Tensor(loss_weight).to(device))
         else:
             criterion = CrossEntropyLoss()
+    elif cfg["MODEL"]["HEAD"]["LOSS"] == "FocalLoss":
+        gamma = cfg["MODEL"]["HEAD"]["LOSS_GAMMA"]
+        alpha = cfg["MODEL"]["HEAD"]["LOSS_ALPHA"]
+        if not gamma:
+            gamma = 2
+        if not alpha:
+            alpha = None
+        criterion = LOSSES["FocalLoss"](gamma=gamma, alpha=alpha)
     else:
         raise NotImplementedError("%s is not implemented!" % cfg["MODEL"]["HEAD"]["LOSS"])
 
+    metric = cfg["TEST"]["METRIC"]
     begin_epoch = 0
     last_epoch = -1
     best_acc = -1
@@ -134,18 +144,30 @@ def main(cfg):
 
         # trains
         f1, acc, loss, conf_matrix = train(model, criterion, optimizer, train_loader, device)
-        train_acc.append(acc)
+        if metric == "acc":
+            m = acc
+        elif metric == "f1":
+            m = f1
+        else:
+            raise NotImplementedError("Metric %s is not implemented!" % metric)
+        train_acc.append(m)
         train_loss.append(loss)
         lr_scheduler.step()
 
         # evaluates
         f1, acc, clf_report, loss, conf_matrix = evaluate(model, criterion,
                                                           val_loader, device)
-        val_acc.append(acc)
+        if metric == "acc":
+            m = acc
+        elif metric == "f1":
+            m = f1
+        else:
+            raise NotImplementedError("Metric %s is not implemented!" % metric)
+        val_acc.append(m)
         val_loss.append(loss)
         best_model = False
-        if acc > best_acc:
-            best_acc = acc
+        if m > best_acc:
+            best_acc = m
             best_clf_report = clf_report
             best_conf_matrix = conf_matrix
             best_model = True
@@ -162,7 +184,7 @@ def main(cfg):
 
         # writes results:
         with open(os.path.join(output_path, "final_results.txt"), "w") as file:
-            file.write("Acc: %f\n\n" % best_acc)
+            file.write("%s: %f\n\n" % (metric, best_acc))
             file.write(best_clf_report)
             file.write("\n")
             file.close()
@@ -170,9 +192,9 @@ def main(cfg):
         epochs = range(epoch+1)
 
         fig = plt.figure()
-        plt.plot(epochs, train_acc, 'r', label='Training acc')
-        plt.plot(epochs, val_acc, 'b', label='Validation acc')
-        plt.title('Training and validation acc')
+        plt.plot(epochs, train_acc, 'r', label='Training %s' % metric)
+        plt.plot(epochs, val_acc, 'b', label='Validation %s' % metric)
+        plt.title('Training and validation %s' % metric)
         plt.legend()
         fig.savefig(os.path.join(output_path, 'acc_plot.png'),
                     bbox_inches='tight')
@@ -198,7 +220,7 @@ def main(cfg):
         print()
 
     print("Done training!")
-    print("Best acc:", best_acc)
+    print("Best %s:" % metric, best_acc)
     print(best_clf_report)
 
 

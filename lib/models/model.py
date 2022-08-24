@@ -68,6 +68,13 @@ class Model(nn.Module):
                     print("Freezing %s..." % name)
                     p.requires_grad = False
 
+    def remove_fc(self):
+        if self.head_name == "LinearCls":
+            self.head.fc = nn.Sequential()
+        else:
+            raise NotImplementedError("Removing FC for head %s is not implemented!" %
+                self.head_name)
+
     def forward(self, x):
         x = self.backbone(x)
         x = self.neck(x)
@@ -79,13 +86,14 @@ if __name__ == "__main__":
     cfg = {
         "MODEL": {
             "BACKBONE": {"NAME": "mobileone", "WIDEN_FACTOR": "s0"},
-            "NECK": "B-CNN",
+            "NECK": "GlobalAveragePooling",
             "HEAD": {"NAME": "LinearCls", "DROPOUT": 0.0}
         },
         "DATASET": {"NUM_CLS": 2},
         "TRAIN": {"PRETRAINED": None}
     }
     model = Model(cfg)
+    model.remove_fc()
 
     print(model)
     test_data = torch.rand(5, 3, 224, 224)

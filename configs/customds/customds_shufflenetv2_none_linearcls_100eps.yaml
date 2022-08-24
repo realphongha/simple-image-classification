@@ -67,4 +67,5 @@ TRAIN:
 TEST:
   BATCH_SIZE: 32
   WEIGHTS: '/path/to/weights'
+  METRIC: 'acc'
   SHUFFLE: true

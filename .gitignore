@@ -1,6 +1,7 @@
 # projects
 outputs/*
 object_detection/*.yaml
+random_tools/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
