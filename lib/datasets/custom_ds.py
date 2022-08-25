@@ -26,7 +26,7 @@ class CustomDs(BaseDs):
             for i in range(len(self.labels)):
                 lbl = self.labels[i]
                 fp = self.data[i]
-                for _ in range(weights[lbl]):
+                for _ in range(weights[lbl]-1):
                     self.data.append(fp)
                     self.labels.append(lbl)
         lbl_counter = Counter(self.labels).items()
