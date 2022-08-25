@@ -1,11 +1,13 @@
 import os
-from tkinter import W
+from collections import Counter
 from .base_ds import BaseDs
 
 
 class CustomDs(BaseDs):
     def __init__(self, data_path, is_train, cfg):
         super(CustomDs, self).__init__(data_path, is_train, cfg)
+        if cfg["DATASET"]["OVERSAMPLING"]:
+            cls_count = dict()
         for d in os.listdir(self.data_path):
             dir = os.path.join(self.data_path, d)
             if not os.path.isdir(dir) or d not in self.cls: continue
@@ -14,6 +16,23 @@ class CustomDs(BaseDs):
                 fp = os.path.join(dir, fn)
                 self.data.append(fp)
                 self.labels.append(self.cls_dict[d])
+                if cfg["DATASET"]["OVERSAMPLING"]:
+                    cls_count[self.cls_dict[d]] = cls_count.get(self.cls_dict[d], 0) + 1
+        if cfg["DATASET"]["OVERSAMPLING"]:
+            max_cls_count = max(cls_count.values())
+            weights = cls_count.items()
+            weights = [(cls, round(c/max_cls_count)) for cls, c in weights]
+            weights = dict(weights)
+            for i in range(len(self.labels)):
+                lbl = self.labels[i]
+                fp = self.data[i]
+                for _ in range(weights[lbl]):
+                    self.data.append(fp)
+                    self.labels.append(lbl)
+        lbl_counter = Counter(self.labels).items()
+        lbl_counter = [(self.cls[cls], c) for cls, c in lbl_counter]
+        print("Classes count:")
+        print(lbl_counter)
 
 
 if __name__ == "__main__":
