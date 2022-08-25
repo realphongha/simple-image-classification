@@ -18,7 +18,7 @@ class CustomDs(BaseDs):
             cls_count = Counter(self.labels)
             max_cls_count = max(cls_count.values())
             weights = cls_count.items()
-            weights = [(cls, round(c/max_cls_count)) for cls, c in weights]
+            weights = [(cls, round(max_cls_count/c)) for cls, c in weights]
             weights = dict(weights)
             for i in range(len(self.labels)):
                 lbl = self.labels[i]
