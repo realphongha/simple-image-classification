@@ -29,6 +29,7 @@ DATASET:
     - 20
     PROB: 0.2
   RANDOM_CROP: true
+  OVERSAMPLING: false
 
 MODEL:
   BACKBONE: 

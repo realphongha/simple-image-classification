@@ -9,8 +9,8 @@ import torch.nn.functional as F
 class FocalLoss(nn.CrossEntropyLoss):
     ''' Focal loss for classification tasks on imbalanced datasets '''
 
-    def __init__(self, gamma, alpha=None, ignore_index=-100, reduction='none'):
-        super().__init__(weight=alpha, ignore_index=ignore_index, reduction='none')
+    def __init__(self, gamma, alpha=None, ignore_index=-100, reduction='mean'):
+        super().__init__(weight=alpha, ignore_index=ignore_index, reduction=reduction)
         self.reduction = reduction
         self.gamma = gamma
 

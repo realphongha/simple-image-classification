@@ -43,7 +43,7 @@ def main(opt):
             cls, cls_prob, latency = engine.infer(img)
 
             print("Result:")
-            cls_name = opt.cls[cls] if opt.cls else cls
+            cls_name = opt.cls[cls] if opt.cls else str(cls)
             print("Class: %i (%s), score: %.4f" % (cls, cls_name, cls_prob[cls]))
             print("Classes probability:", cls_prob)
             print("Latency: %.4f, FPS: %.2f" % (latency, 1/latency))
@@ -61,7 +61,7 @@ def main(opt):
                     print("Ignoring %s..." % fn)
                     continue
                 # print("Result:")
-                cls_name = opt.cls[cls] if opt.cls else cls
+                cls_name = opt.cls[cls] if opt.cls else str(cls)
                 print("Class: %i (%s), score: %.4f" % (cls, cls_name, cls_prob[cls]))
                 # print("Classes probability:", cls_prob)
                 print("Latency: %.4f, FPS: %.2f" % (latency, 1/latency))
@@ -106,7 +106,7 @@ def main(opt):
                         x1, y1, x2, y2 = boxes[i][:4]
                         x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
                         cls, cls_prob = clss[i], cls_probs[i]
-                        cls_name = opt.cls[cls] if opt.cls else cls
+                        cls_name = opt.cls[cls] if opt.cls else str(cls)
                         cls_str = "%s %.2f" % (cls_name, cls_prob[cls])
                         frame = draw_bbox(frame, cls_str, (x1, y1), (x2, y2))
                 else:
@@ -116,7 +116,7 @@ def main(opt):
                         obj = frame[y1:y2, x1:x2]
                         cls, cls_prob, latency = engine.infer(obj, 1)
                         print("Latency: %.4f" % latency)
-                        cls_name = opt.cls[cls] if opt.cls else cls
+                        cls_name = opt.cls[cls] if opt.cls else str(cls)
                         cls_str = "%s %.2f" % (cls_name, cls_prob[cls])
                         frame = draw_bbox(frame, cls_str, (x1, y1), (x2, y2))
                 cv2.imshow("Test", frame)

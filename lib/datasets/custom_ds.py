@@ -1,5 +1,5 @@
 import os
-from tkinter import W
+from collections import Counter
 from .base_ds import BaseDs
 
 
@@ -14,6 +14,22 @@ class CustomDs(BaseDs):
                 fp = os.path.join(dir, fn)
                 self.data.append(fp)
                 self.labels.append(self.cls_dict[d])
+        if cfg["DATASET"]["OVERSAMPLING"] and is_train:
+            cls_count = Counter(self.labels)
+            max_cls_count = max(cls_count.values())
+            weights = cls_count.items()
+            weights = [(cls, round(max_cls_count/c)) for cls, c in weights]
+            weights = dict(weights)
+            for i in range(len(self.labels)):
+                lbl = self.labels[i]
+                fp = self.data[i]
+                for _ in range(weights[lbl]-1):
+                    self.data.append(fp)
+                    self.labels.append(lbl)
+        lbl_counter = Counter(self.labels).items()
+        lbl_counter = [(self.cls[cls], c) for cls, c in lbl_counter]
+        print("Classes count:")
+        print(lbl_counter)
 
 
 if __name__ == "__main__":

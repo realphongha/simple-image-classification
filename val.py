@@ -69,7 +69,7 @@ def main(cfg, output_path):
             gamma = 2
         if not alpha:
             alpha = None
-        criterion = LOSSES["FocalLoss"](gamma=gamma, alpha=alpha)
+        criterion = LOSSES["FocalLoss"](gamma=gamma, alpha=torch.Tensor(alpha).to(device))
     else:
         raise NotImplementedError("%s is not implemented!" % cfg["MODEL"]["HEAD"]["LOSS"])
 
