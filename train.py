@@ -19,6 +19,7 @@ from lib.models.model import Model
 from lib.losses import LOSSES
 from lib.tools import train, evaluate
 from lib.utils import save_checkpoint
+from lib.lr_scheduler import *
 
 
 def main(cfg):
@@ -127,10 +128,21 @@ def main(cfg):
         with open(os.path.join(output_path, "configs.txt"), "w") as output_file:
             json.dump(cfg, output_file)
 
-    lr_scheduler = optim.lr_scheduler.MultiStepLR(
-        optimizer, cfg["TRAIN"]["LR_STEP"], cfg["TRAIN"]["LR_FACTOR"],
-        last_epoch=last_epoch
-    )
+    if cfg["TRAIN"]["LR_SCHEDULE"] == "multistep":
+        if cfg["TRAIN"]["WARMUP"]:
+            lr_scheduler = WarmupMultiStepSchedule(
+                optimizer, cfg["TRAIN"]["WARMUP"], cfg["TRAIN"]["LR_STEP"], 
+                cfg["TRAIN"]["LR_FACTOR"],
+                last_epoch=last_epoch
+            )
+        else:
+            lr_scheduler = optim.lr_scheduler.MultiStepLR(
+                optimizer, cfg["TRAIN"]["LR_STEP"], cfg["TRAIN"]["LR_FACTOR"],
+                last_epoch=last_epoch
+            )
+    else:
+        raise NotImplementedError("%s lr scheduler is not implemented!" % \
+            cfg["TRAIN"]["LR_SCHEDULE"])
 
     if cfg["MODEL"]["FREEZE"]:
         parts_to_freeze = cfg["MODEL"]["FREEZE"].strip().split(",")

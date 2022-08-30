@@ -54,6 +54,8 @@ TRAIN:
   PRETRAINED: "pretrained/ShuffleNetV2.1.0x.pth.tar"
   EPOCHS: 10
   EARLY_STOPPING:
+  LR_SCHEDULE: "multistep"
+  WARMUP:
   LR: 0.001
   LR_FACTOR: 0.1
   LR_STEP:

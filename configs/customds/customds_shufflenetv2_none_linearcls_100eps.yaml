@@ -53,6 +53,8 @@ TRAIN:
   PRETRAINED: "path/to/pretrained"
   EPOCHS: 100
   EARLY_STOPPING:
+  LR_SCHEDULE: "multistep"
+  WARMUP: 5
   LR: 0.01
   LR_FACTOR: 0.1
   LR_STEP:

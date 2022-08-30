@@ -33,4 +33,3 @@ if __name__ == "__main__":
     test_data = torch.rand(5, 3, 384, 384)
     test_outputs = model(test_data)
     print(test_outputs.size())
-
