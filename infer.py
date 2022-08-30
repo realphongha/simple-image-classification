@@ -100,7 +100,7 @@ def main(opt):
                         x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
                         obj = frame[y1:y2, x1:x2]
                         imgs.append(obj)
-                    clss, cls_probs, latency = engine.infer_batch(imgs)
+                    clss, cls_probs, latency = engine.infer_batch(imgs, 1)
                     print("Latency: %.4f" % latency)
                     for i in range(len(clss)):
                         x1, y1, x2, y2 = boxes[i][:4]
@@ -114,7 +114,7 @@ def main(opt):
                         x1, y1, x2, y2 = box[:4]
                         x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
                         obj = frame[y1:y2, x1:x2]
-                        cls, cls_prob, latency = engine.infer(obj)
+                        cls, cls_prob, latency = engine.infer(obj, 1)
                         print("Latency: %.4f" % latency)
                         cls_name = opt.cls[cls] if opt.cls else str(cls)
                         cls_str = "%s %.2f" % (cls_name, cls_prob[cls])

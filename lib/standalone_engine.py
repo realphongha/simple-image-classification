@@ -65,7 +65,7 @@ class ClassiferTorch(ClassifierAbs):
         self.model.to(device)
         self.model.eval()
 
-    def infer(self, img, test_time=1):
+    def infer(self, img, test_time=50):
         np_input = self._preprocess(img)
         inp = self.torch.Tensor(np_input).float().to(self.device)
         speed = list()
@@ -77,7 +77,7 @@ class ClassiferTorch(ClassifierAbs):
         cls, cls_prob = self._postprocess(np_output)
         return cls, cls_prob, np.mean(speed)
 
-    def infer_batch(self, imgs, test_time=1):
+    def infer_batch(self, imgs, test_time=50):
         for i in range(len(imgs)):
             imgs[i] = self._preprocess(imgs[i])
         inp = np.concatenate(imgs, axis=0)
@@ -104,7 +104,7 @@ class ClassiferOnnx(ClassifierAbs):
         self.ort_session = onnxruntime.InferenceSession(model_path)
         self.input_name = self.ort_session.get_inputs()[0].name
 
-    def infer(self, img, test_time=1):
+    def infer(self, img, test_time=50):
         inp = self._preprocess(img)
         speed = list()
         for _ in range(test_time):
@@ -114,7 +114,7 @@ class ClassiferOnnx(ClassifierAbs):
         cls, cls_prob = self._postprocess(output)
         return cls, cls_prob, np.mean(speed)
 
-    def infer_batch(self, imgs, test_time=1):
+    def infer_batch(self, imgs, test_time=50):
         for i in range(len(imgs)):
             imgs[i] = self._preprocess(imgs[i])
         inp = np.concatenate(imgs, axis=0)
