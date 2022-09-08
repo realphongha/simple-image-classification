@@ -24,6 +24,16 @@ class Model(nn.Module):
                     print("Freezing %s..." % name)
                     p.requires_grad = False
 
+    def free(self, parts):
+        for part in parts:
+            if part not in ("backbone", "neck", "head"):
+                raise NotImplementedError("Cannot free %s!" % part)
+            print("Freeing %s..." % part)
+            for name, p in self.named_parameters():
+                if part in name:
+                    print("Freeing %s..." % name)
+                    p.requires_grad = True
+
     def remove_fc(self):
         if self.cfg["MODEL"]["HEAD"]["NAME"] == "LinearCls":
             self.head.fc = nn.Sequential()

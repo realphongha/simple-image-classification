@@ -79,6 +79,9 @@ TRAIN:
   EARLY_STOPPING:
   LR_SCHEDULE: "multistep"
   WARMUP: 5
+  WARMUP_FREEZE:
+    EPOCHS: 5
+    PARTS: "backbone"
   LR: 0.01
   LR_FACTOR: 0.1
   LR_STEP:

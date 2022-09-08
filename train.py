@@ -119,10 +119,29 @@ def main(cfg):
         parts_to_freeze = [p.strip() for p in parts_to_freeze]
         model.freeze(parts_to_freeze)
 
+    warmup_freeze_eps = cfg["TRAIN"]["WARMUP_FREEZE"]["EPOCHS"]
+    warmup_freeze_parts = cfg["TRAIN"]["WARMUP_FREEZE"]["PARTS"]
+    if warmup_freeze_eps and warmup_freeze_parts:
+        warmup_freeze = True
+        warmup_freeze_parts = warmup_freeze_parts.strip().split(",")
+        warmup_freeze_parts = [p.strip() for p in warmup_freeze_parts]
+    else:
+        warmup_freeze = False
+    frozen = False
+
     model.to(device)
 
     for epoch in range(begin_epoch, cfg["TRAIN"]["EPOCHS"]):
         print("EPOCH %i:" % epoch)
+
+        # freezes model weights for warmup
+        if warmup_freeze:
+            if epoch < warmup_freeze_eps and not frozen:
+                model.freeze(warmup_freeze_parts)
+                frozen = True
+            elif epoch >= warmup_freeze_eps and frozen:
+                model.free(warmup_freeze_parts)
+                frozen = False
 
         # trains
         f1, acc, loss, conf_matrix = train(model, criterion, optimizer, train_loader, device)
