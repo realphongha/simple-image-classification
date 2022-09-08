@@ -1,62 +1,18 @@
 import torch
 from torch import nn
-from .backbones import *
-from .necks import *
-from .heads import *
+from .backbones import build_backbone
+from .necks import build_neck
+from .heads import build_head
 
 
 class Model(nn.Module):
     def __init__(self, cfg, training=True):
         super(Model, self).__init__()
         self.cfg = cfg
-        backbone_name = cfg["MODEL"]["BACKBONE"]["NAME"]
-        self.neck_name = cfg["MODEL"]["NECK"]
-        self.head_name = cfg["MODEL"]["HEAD"]["NAME"]
         self.nc = cfg["DATASET"]["NUM_CLS"]
-        if backbone_name == "shufflenetv2":
-            self.backbone = get_shufflenetv2(
-                cfg["MODEL"]["BACKBONE"]["WIDEN_FACTOR"],
-                cfg["TRAIN"]["PRETRAINED"] if training else None
-            )
-            self.out_channels = self.backbone.stage_out_channels[-1]
-        elif backbone_name == "shufflenetv2_plus":
-            self.backbone = get_shufflenetv2_plus(
-                cfg["MODEL"]["INPUT_SHAPE"],
-                cfg["DATASET"]["NUM_CLS"],
-                cfg["MODEL"]["BACKBONE"]["WIDEN_FACTOR"],
-                cfg["TRAIN"]["PRETRAINED"] if training else None
-            )
-            self.out_channels = self.backbone.stage_out_channels[-1]
-        elif backbone_name == "mobilenetv3":
-            self.backbone, self.out_channels = get_mobilenet_v3(
-                cfg["MODEL"]["BACKBONE"]["WIDEN_FACTOR"],
-                cfg["TRAIN"]["PRETRAINED"] if training else None
-            )
-        elif backbone_name == "mobileone":
-            self.backbone = get_mobileone(
-                cfg["DATASET"]["NUM_CLS"],
-                training,
-                cfg["MODEL"]["BACKBONE"]["WIDEN_FACTOR"],
-                cfg["TRAIN"]["PRETRAINED"] if training else None
-            )
-            self.out_channels = self.backbone.in_planes
-        else:
-            raise NotImplementedError("Backbone %s is not implemented!" %
-                backbone_name)
-        if self.neck_name == "GlobalAveragePooling":
-            self.neck = nn.AvgPool2d(7)
-        elif self.neck_name == "B-CNN":
-            self.neck = BCnnNeck()
-            self.out_channels **= 2
-        else:
-            raise NotImplementedError("Neck %s is not implemented!" %
-                self.neck_name)
-        if self.head_name == "LinearCls":
-            self.head = LinearClsHead(self.out_channels, self.nc,
-                cfg["MODEL"]["HEAD"]["DROPOUT"])
-        else:
-            raise NotImplementedError("Head %s is not implemented!" %
-                self.head_name)
+        self.backbone, self.out_channels = build_backbone(cfg, training, self)
+        self.neck, self.out_channels = build_neck(cfg, training, self)
+        self.head = build_head(cfg, training, self)
 
     def freeze(self, parts):
         for part in parts:
@@ -69,7 +25,7 @@ class Model(nn.Module):
                     p.requires_grad = False
 
     def remove_fc(self):
-        if self.head_name == "LinearCls":
+        if self.cfg["MODEL"]["HEAD"]["NAME"] == "LinearCls":
             self.head.fc = nn.Sequential()
         else:
             raise NotImplementedError("Removing FC for head %s is not implemented!" %
