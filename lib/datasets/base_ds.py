@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 from torchvision import transforms
 from PIL import Image
+from ..transforms import *
 
 
 class BaseDs(torch.utils.data.Dataset):
@@ -38,16 +39,28 @@ class BaseDs(torch.utils.data.Dataset):
         if self.is_train:
             if self.cfg["DATASET"]["GRAYSCALE"] and self.cfg["DATASET"]["GRAYSCALE"] > random.random():
                 pipeline.append(transforms.Grayscale())
-            if self.cfg["DATASET"]["COLORJITTER"] and self.cfg["DATASET"]["COLORJITTER"] > random.random():
-                pipeline.append(transforms.ColorJitter(brightness=.5, hue=.3))
-            if self.cfg["DATASET"]["GAUSSIAN_BLUR"] and self.cfg["DATASET"]["GAUSSIAN_BLUR"] > random.random():
-                pipeline.append(transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)))
+            if self.cfg["DATASET"]["COLORJITTER"] and self.cfg["DATASET"]["COLORJITTER"]["PROB"] > random.random():
+                pipeline.append(transforms.ColorJitter(
+                    brightness=self.cfg["DATASET"]["COLORJITTER"]["BRIGHTNESS"], 
+                    contrast=self.cfg["DATASET"]["COLORJITTER"]["CONTRAST"], 
+                    saturation=self.cfg["DATASET"]["COLORJITTER"]["SATURATION"], 
+                    hue=self.cfg["DATASET"]["COLORJITTER"]["HUE"]
+                ))
+            if self.cfg["DATASET"]["GAUSSIAN_BLUR"] and self.cfg["DATASET"]["GAUSSIAN_BLUR"]["PROB"] > random.random():
+                pipeline.append(transforms.GaussianBlur(
+                    kernel_size=self.cfg["DATASET"]["GAUSSIAN_BLUR"]["KERNEL_SIZE"], 
+                    sigma=self.cfg["DATASET"]["GAUSSIAN_BLUR"]["SIGMA"]
+                ))
             if self.cfg["DATASET"]["PERSPECTIVE"]:
-                pipeline.append(transforms.RandomPerspective(distortion_scale=0.6, p=self.cfg["DATASET"]["PERSPECTIVE"]))
+                pipeline.append(transforms.RandomPerspective(
+                    distortion_scale=self.cfg["DATASET"]["PERSPECTIVE"]["SCALE"], 
+                    p=self.cfg["DATASET"]["PERSPECTIVE"]["PROB"]
+                ))
             if self.cfg["DATASET"]["ROTATE"] and self.cfg["DATASET"]["ROTATE"]["PROB"] > random.random():
                 pipeline.append(transforms.RandomRotation(degrees=self.cfg["DATASET"]["ROTATE"]["DEGREES"]))
         if self.is_train and self.cfg["DATASET"]["RANDOM_CROP"]:
-            pipeline.append(transforms.Resize((int(self.input_shape[0]*8/7), int(self.input_shape[1]*8/7))))
+            ratio = self.cfg["DATASET"]["RANDOM_CROP"]
+            pipeline.append(transforms.Resize((int(self.input_shape[0]*ratio), int(self.input_shape[1]*ratio))))
             pipeline.append(transforms.RandomResizedCrop(self.input_shape))
             safe_pipeline.append(transforms.Resize(self.input_shape))
         else:
@@ -64,6 +77,13 @@ class BaseDs(torch.utils.data.Dataset):
         raw_img = np.array(raw_img)
         if len(raw_img.shape) == 2:
             raw_img = cv2.cvtColor(raw_img, cv2.COLOR_GRAY2RGB)
+        if self.is_train:
+            if self.cfg["DATASET"]["RANDOM_ERASING"]:
+                random_erasing(raw_img, 
+                    p=self.cfg["DATASET"]["RANDOM_ERASING"]["PROB"],
+                    scale=self.cfg["DATASET"]["RANDOM_ERASING"]["SCALE"],
+                    ratio=self.cfg["DATASET"]["RANDOM_ERASING"]["RATIO"],
+                    value=self.cfg["DATASET"]["RANDOM_ERASING"]["VALUE"])
         img = raw_img.astype(np.float32)
         img = (img/255.0 - self.mean) / self.std
         img = img.transpose([2, 0, 1])
