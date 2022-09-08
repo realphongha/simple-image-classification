@@ -20,15 +20,38 @@ DATASET:
   - png
   FLIP: true
   GRAYSCALE: 0.05
-  COLORJITTER: 0.1
-  GAUSSIAN_BLUR: 0.05
-  PERSPECTIVE: 0.1
+  COLORJITTER: 
+    PROB: 0.1
+    BRIGHTNESS: 0.5
+    CONTRAST: 0.5
+    SATURATION': 0.3
+    HUE: 0.3
+  GAUSSIAN_BLUR:
+    PROB: 0.05
+    KERNEL_SIZE: 
+    - 5 
+    - 9
+    SIGMA: 
+    - 0.1
+    - 5.0
+  PERSPECTIVE:
+    PROB: 0.1
+    SCALE: 0.6
   ROTATE: 
     DEGREES: 
     - -20 
     - 20
     PROB: 0.2
-  RANDOM_CROP: true
+  RANDOM_CROP: 1.143
+  RANDOM_ERASING:
+    PROB: 0.2
+    SCALE: 
+    - 0.02
+    - 0.33
+    RATIO: 
+    - 0.3
+    - 3.3
+    VALUE: 0
   OVERSAMPLING: false
 
 MODEL:
@@ -56,6 +79,9 @@ TRAIN:
   EARLY_STOPPING:
   LR_SCHEDULE: "multistep"
   WARMUP: 5
+  WARMUP_FREEZE:
+    EPOCHS: 5
+    PARTS: "backbone"
   LR: 0.01
   LR_FACTOR: 0.1
   LR_STEP:

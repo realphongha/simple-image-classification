@@ -1,9 +1,9 @@
 import os
 import datetime
 import json
-
 import argparse
 import yaml
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sn
@@ -12,14 +12,13 @@ import torch.backends.cudnn as cudnn
 import torch.optim as optim
 
 from torch.utils.data import DataLoader
-from torch.nn import CrossEntropyLoss
 
 from lib.datasets import DATASETS
 from lib.models.model import Model
-from lib.losses import LOSSES
+from lib.losses import build_loss
 from lib.tools import train, evaluate
 from lib.utils import save_checkpoint
-from lib.lr_scheduler import *
+from lib.scheduler import build_scheduler
 
 
 def main(cfg):
@@ -27,7 +26,7 @@ def main(cfg):
     cudnn.deterministic = cfg["CUDNN"]["DETERMINISTIC"]
     cudnn.enabled = cfg["CUDNN"]["ENABLED"]
 
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     if cfg["GPUS"]:
         os.environ["CUDA_VISIBLE_DEVICES"] = cfg["GPUS"]
 
@@ -57,7 +56,6 @@ def main(cfg):
                             num_workers=cfg["WORKERS"])
 
     model = Model(cfg, training=True)
-
     model.to(device)
 
     if cfg["TRAIN"]["OPTIMIZER"] == "adam":
@@ -72,22 +70,7 @@ def main(cfg):
         raise NotImplementedError("%s is not implemented!" %
                                   cfg["TRAIN"]["OPTIMIZER"])
 
-    if cfg["MODEL"]["HEAD"]["LOSS"] == "CrossEntropy":
-        loss_weight = cfg["MODEL"]["HEAD"]["LOSS_WEIGHT"]
-        if loss_weight:
-            criterion = CrossEntropyLoss(weight=torch.Tensor(loss_weight).to(device))
-        else:
-            criterion = CrossEntropyLoss()
-    elif cfg["MODEL"]["HEAD"]["LOSS"] == "FocalLoss":
-        gamma = cfg["MODEL"]["HEAD"]["LOSS_GAMMA"]
-        alpha = cfg["MODEL"]["HEAD"]["LOSS_ALPHA"]
-        if not gamma:
-            gamma = 2
-        if not alpha:
-            alpha = None
-        criterion = LOSSES["FocalLoss"](gamma=gamma, alpha=torch.Tensor(alpha).to(device))
-    else:
-        raise NotImplementedError("%s is not implemented!" % cfg["MODEL"]["HEAD"]["LOSS"])
+    criterion = build_loss(cfg, device)
 
     metric = cfg["TEST"]["METRIC"]
     begin_epoch = 0
@@ -100,6 +83,7 @@ def main(cfg):
     train_acc = list()
     val_acc = list()
 
+    # Tries to resume or creates new output directory
     if cfg["TRAIN"]["AUTO_RESUME"] and cfg["TRAIN"]["CKPT"]:
         ckpt_file = cfg["TRAIN"]["CKPT"]
         if not ckpt_file.endswith(".pth"):
@@ -128,31 +112,36 @@ def main(cfg):
         with open(os.path.join(output_path, "configs.txt"), "w") as output_file:
             json.dump(cfg, output_file)
 
-    if cfg["TRAIN"]["LR_SCHEDULE"] == "multistep":
-        if cfg["TRAIN"]["WARMUP"]:
-            lr_scheduler = WarmupMultiStepSchedule(
-                optimizer, cfg["TRAIN"]["WARMUP"], cfg["TRAIN"]["LR_STEP"], 
-                cfg["TRAIN"]["LR_FACTOR"],
-                last_epoch=last_epoch
-            )
-        else:
-            lr_scheduler = optim.lr_scheduler.MultiStepLR(
-                optimizer, cfg["TRAIN"]["LR_STEP"], cfg["TRAIN"]["LR_FACTOR"],
-                last_epoch=last_epoch
-            )
-    else:
-        raise NotImplementedError("%s lr scheduler is not implemented!" % \
-            cfg["TRAIN"]["LR_SCHEDULE"])
+    lr_scheduler = build_scheduler(cfg, optimizer, last_epoch)
 
     if cfg["MODEL"]["FREEZE"]:
         parts_to_freeze = cfg["MODEL"]["FREEZE"].strip().split(",")
         parts_to_freeze = [p.strip() for p in parts_to_freeze]
         model.freeze(parts_to_freeze)
 
+    warmup_freeze_eps = cfg["TRAIN"]["WARMUP_FREEZE"]["EPOCHS"]
+    warmup_freeze_parts = cfg["TRAIN"]["WARMUP_FREEZE"]["PARTS"]
+    if warmup_freeze_eps and warmup_freeze_parts:
+        warmup_freeze = True
+        warmup_freeze_parts = warmup_freeze_parts.strip().split(",")
+        warmup_freeze_parts = [p.strip() for p in warmup_freeze_parts]
+    else:
+        warmup_freeze = False
+    frozen = False
+
     model.to(device)
 
     for epoch in range(begin_epoch, cfg["TRAIN"]["EPOCHS"]):
         print("EPOCH %i:" % epoch)
+
+        # freezes model weights for warmup
+        if warmup_freeze:
+            if epoch < warmup_freeze_eps and not frozen:
+                model.freeze(warmup_freeze_parts)
+                frozen = True
+            elif epoch >= warmup_freeze_eps and frozen:
+                model.free(warmup_freeze_parts)
+                frozen = False
 
         # trains
         f1, acc, loss, conf_matrix = train(model, criterion, optimizer, train_loader, device)

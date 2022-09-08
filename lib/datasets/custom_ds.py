@@ -40,22 +40,42 @@ if __name__ == "__main__":
             "CLS": "cat, dog",
             "IMG_EXT": ("jpg", "png", "jpeg"),
             "FLIP": True,
-            "GRAYSCALE": 1.0,
-            "COLORJITTER": 0.1,
-            "GAUSSIAN_BLUR": 0.1,
-            "PERSPECTIVE": 0.1,
+            "GRAYSCALE": 0.1,
+            "COLORJITTER": {
+                'PROB': 0.1,
+                'BRIGHTNESS': 0.5,
+                'CONTRAST': 0.5,
+                'SATURATION': 0.3,
+                'HUE': 0.3
+            },
+            "GAUSSIAN_BLUR": {
+                "PROB": 0.1,
+                "KERNEL_SIZE": (5, 9),
+                "SIGMA": (0.1, 5.0)
+            },
+            "PERSPECTIVE": {
+                "PROB": 0.1,
+                "SCALE": 0.6
+            },
             "ROTATE": {
                 "DEGREES": (-20, 20),
                 "PROB": 0.2
             },
-            "RANDOM_CROP": True
+            "RANDOM_CROP": 1.143,
+            "RANDOM_ERASING": {
+                "PROB": 0.2,
+                "SCALE": (0.02, 0.33),
+                "RATIO": (0.3, 3.3),
+                "VALUE": 0
+            },
+            "OVERSAMPLING": False,
         },
         "MODEL": {
             "INPUT_SHAPE": (224, 224)
         }
     }
     ds = CustomDs(data_path, True, cfg)
-    for i in range(10, 20):
+    for i in range(100, 200):
         data, label, img = ds[i]
         print(data.shape)
         print(label)
