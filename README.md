@@ -11,6 +11,7 @@ Simple image classification with Pytorch. Currently supporting:
 * Linear 
 ## Loss functions:
 * Cross entropy
+* Focal loss
 ## Augmentation:
 * Horizontal flip
 * Grayscale
@@ -19,6 +20,7 @@ Simple image classification with Pytorch. Currently supporting:
 * Perspective
 * Rotate
 * Random crop
+* Random erasing
 ## Converting and running models in engines:
 * ONNX
 ## to be added more soon...
