@@ -16,6 +16,7 @@ def train(model, criterion, optimizer, train_loader, device):
     for data, label, raw_img in tqdm(train_loader):
         data = data.float().to(device)
         label = label.long().to(device)
+        optimizer.zero_grad()
         output = model(data)
         loss = criterion(output, label)
         output_label = torch.max(output, 1).indices.cpu().detach().numpy()
@@ -24,7 +25,6 @@ def train(model, criterion, optimizer, train_loader, device):
         for i in range(output_label.shape[0]):
             pred.append(round(output_label[i]))
             gt.append(round(gt_label[i]))
-        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
