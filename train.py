@@ -21,7 +21,7 @@ from lib.utils import save_checkpoint
 from lib.scheduler import build_scheduler
 
 
-def main(cfg):
+def main(cfg, opt):
     cudnn.benchmark = cfg["CUDNN"]["BENCHMARK"]
     cudnn.deterministic = cfg["CUDNN"]["DETERMINISTIC"]
     cudnn.enabled = cfg["CUDNN"]["ENABLED"]
@@ -129,7 +129,14 @@ def main(cfg):
         warmup_freeze = False
     frozen = False
 
-    model.to(device)
+    if not warmup_freeze:
+        # compiles model right now if doesn't need freezing for warmup
+        if opt.compile == "default":
+            print(f"Compiling model in {opt.compile} mode...")
+            model = torch.compile(model)
+        elif opt.compile in ("reduce-overhead", "max-autotune"):
+            print(f"Compiling model in {opt.compile} mode...")
+            model = torch.compile(model, mode=opt.compile)
 
     for epoch in range(begin_epoch, cfg["TRAIN"]["EPOCHS"]):
         print("EPOCH %i:" % epoch)
@@ -141,6 +148,15 @@ def main(cfg):
                 frozen = True
             elif epoch >= warmup_freeze_eps and frozen:
                 model.free(warmup_freeze_parts)
+
+                # if need to freeze model for warmup, compile after freeing model
+                if opt.compile == "default":
+                    print(f"Compiling model in {opt.compile} mode...")
+                    model = torch.compile(model)
+                elif opt.compile in ("reduce-overhead", "max-autotune"):
+                    print(f"Compiling model in {opt.compile} mode...")
+                    model = torch.compile(model, mode=opt.compile)
+
                 frozen = False
 
         # trains
@@ -231,6 +247,10 @@ if __name__ == "__main__":
                         type=str,
                         default='configs/customds/dogsvscats_shufflenetv2_none_linearcls_10eps.yaml',
                         help='path to config file')
+    parser.add_argument('--compile',
+                        type=str,
+                        default='reduce-overhead',
+                        help='Pytorch 2.0 compile, options: default, reduce-overhead, max-autotune, no')
     opt = parser.parse_args()
 
     with open(opt.config, "r") as stream:
@@ -240,4 +260,4 @@ if __name__ == "__main__":
             print(exc)
             quit()
 
-    main(cfg)
+    main(cfg, opt)

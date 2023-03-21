@@ -17,7 +17,7 @@ class ClassifierAbs(metaclass=ABCMeta):
         """Compute softmax values for each sets of scores in x."""
         e_x = np.exp(x - np.max(x))
         return e_x / e_x.sum()
-        
+
     def _preprocess(self, img):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = img.astype(np.float32)
@@ -25,19 +25,19 @@ class ClassifierAbs(metaclass=ABCMeta):
         img = (img/255.0 - self.mean) / self.std
         img = img.transpose([2, 0, 1]).astype(np.float32)
         return img[None]
-    
+
     def _postprocess(self, output):
         cls = np.argmax(output)
         cls_prob = ClassifierAbs.softmax(output)
         return cls, cls_prob
-    
+
     @abstractmethod
     def infer(self, img):
         pass
 
 
 class ClassiferTorch(ClassifierAbs):
-    def __init__(self, model_path, input_shape, device, cfg):
+    def __init__(self, model_path, input_shape, device, cfg, compile):
         super().__init__(model_path, input_shape, device)
         import torch
         self.torch = torch
@@ -46,6 +46,7 @@ class ClassiferTorch(ClassifierAbs):
         cudnn.benchmark = cfg["CUDNN"]["BENCHMARK"]
         cudnn.deterministic = cfg["CUDNN"]["DETERMINISTIC"]
         cudnn.enabled = cfg["CUDNN"]["ENABLED"]
+        self.compile = compile
         device = 'cuda' if (torch.cuda.is_available() and cfg["GPUS"]) else 'cpu'
         self.device = device
         print("Start infering using device: %s" % device)
@@ -64,6 +65,15 @@ class ClassiferTorch(ClassifierAbs):
             self.model.backbone = self.model.backbone.reparameterize_model()
         self.model.to(device)
         self.model.eval()
+
+        # compiles model
+        if self.compile == "default":
+            print(f"Compiling model in {self.compile} mode...")
+            self.model = torch.compile(self.model)
+        elif self.compile in ("reduce-overhead", "max-autotune"):
+            print(f"Compiling model in {self.compile} mode...")
+            self.model = torch.compile(self.model, mode=self.compile)
+
 
     def infer(self, img, test_time=50):
         np_input = self._preprocess(img)
@@ -129,4 +139,4 @@ class ClassiferOnnx(ClassifierAbs):
             clss.append(cls)
             cls_probs.append(cls_prob)
         return clss, cls_probs, np.mean(speed)/len(imgs)
-        
+

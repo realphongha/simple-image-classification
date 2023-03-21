@@ -23,7 +23,7 @@ def main(opt):
         engine = ClassiferTorch("doesnt_matter",
                                 cfg["MODEL"]["INPUT_SHAPE"],
                                 "doesnt_matter",
-                                cfg)
+                                cfg, opt.compile)
     elif opt.engine == "onnx":
         engine = ClassiferOnnx(opt.model, opt.input_shape, opt.device)
     else:
@@ -31,7 +31,7 @@ def main(opt):
     det_engine = None
     if opt.det == "yolov5":
         det_engine = OBJ_DET_MODELS["yolov5"](opt.det_model, opt.det_cls,
-            opt.det_num_cls, opt.det_engine, opt.det_input, opt.device, 
+            opt.det_num_cls, opt.det_engine, opt.det_input, opt.device,
             opt.det_conf, opt.det_iou)
     else:
         print("Do not use object detection")
@@ -82,7 +82,7 @@ def main(opt):
             length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             ext = "." + vid.split(".")[-1]
             dst_path = vid.replace(ext, "_result" + ext)
-            writer = cv2.VideoWriter(dst_path, cv2.VideoWriter_fourcc(*'mp4v'), 
+            writer = cv2.VideoWriter(dst_path, cv2.VideoWriter_fourcc(*'mp4v'),
                 10, (width, height))
             if (cap.isOpened()== False):
                 print("Error opening video stream or file")
@@ -146,20 +146,24 @@ if __name__ == "__main__":
                         type=str,
                         default='onnx',
                         help='engine type (onnx, mnn, torch)')
+    parser.add_argument('--compile',
+                        type=str,
+                        default='reduce-overhead',
+                        help='Pytorch 2.0 compile, options: default, reduce-overhead, max-autotune, no')
     parser.add_argument('--model',
                         type=str,
                         default='weights/dogsvscats_shufflenetv2_none_linearcls_10eps.onnx',
                         help='path to model weights')
-    parser.add_argument('--input-shape', 
+    parser.add_argument('--input-shape',
                         nargs='+',
-                        type=int, 
-                        default=(224, 224), 
+                        type=int,
+                        default=(224, 224),
                         help='input shape for classification model')
     parser.add_argument('--cls',
                         type=str,
                         nargs="+",
                         help='class names for classification')
-    parser.add_argument('--batch', action='store_true', 
+    parser.add_argument('--batch', action='store_true',
                         help='use batch for classification')
     parser.add_argument('--config',
                         type=str,
@@ -201,6 +205,6 @@ if __name__ == "__main__":
                         type=str,
                         default='cpu',
                         help='device to run infer on')
-    
+
     opt = parser.parse_args()
     main(opt)
