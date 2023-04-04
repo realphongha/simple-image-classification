@@ -22,10 +22,11 @@ def main(opt):
 
         engine = ClassiferTorch("doesnt_matter",
                                 cfg["MODEL"]["INPUT_SHAPE"],
-                                "doesnt_matter",
+                                "doesnt_matter", opt.gray,
                                 cfg, opt.compile)
     elif opt.engine == "onnx":
-        engine = ClassiferOnnx(opt.model, opt.input_shape, opt.device)
+        engine = ClassiferOnnx(opt.model, opt.input_shape, opt.device,
+                               opt.gray)
     else:
         raise NotImplementedError("Engine %s is not supported!" % opt.engine)
     det_engine = None
@@ -146,9 +147,13 @@ if __name__ == "__main__":
                         type=str,
                         default='onnx',
                         help='engine type (onnx, mnn, torch)')
+    parser.add_argument('--gray',
+                        action="store_true",
+                        default=False,
+                        help='convert image to grayscale for processing or not?')
     parser.add_argument('--compile',
                         type=str,
-                        default='reduce-overhead',
+                        default='no',
                         help='Pytorch 2.0 compile, options: default, reduce-overhead, max-autotune, no')
     parser.add_argument('--model',
                         type=str,

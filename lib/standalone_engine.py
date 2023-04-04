@@ -5,10 +5,11 @@ from abc import ABCMeta, abstractmethod
 
 
 class ClassifierAbs(metaclass=ABCMeta):
-    def __init__(self, model_path, input_shape, device):
+    def __init__(self, model_path, input_shape, device, gray=False):
         self.model_path = model_path
         self.input_shape = input_shape
         self.device = device
+        self.gray = gray
         self.mean = (0.485, 0.456, 0.406)
         self.std = (0.229, 0.224, 0.225)
 
@@ -23,6 +24,9 @@ class ClassifierAbs(metaclass=ABCMeta):
         img = img.astype(np.float32)
         img = cv2.resize(img, self.input_shape, interpolation=cv2.INTER_LINEAR)
         img = (img/255.0 - self.mean) / self.std
+        if self.gray:
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+            img = np.expand_dims(img, axis=2)
         img = img.transpose([2, 0, 1]).astype(np.float32)
         return img[None]
 
@@ -37,8 +41,8 @@ class ClassifierAbs(metaclass=ABCMeta):
 
 
 class ClassiferTorch(ClassifierAbs):
-    def __init__(self, model_path, input_shape, device, cfg, compile):
-        super().__init__(model_path, input_shape, device)
+    def __init__(self, model_path, input_shape, device, gray, cfg, compile):
+        super().__init__(model_path, input_shape, device, gray)
         import torch
         self.torch = torch
         import torch.backends.cudnn as cudnn
@@ -107,8 +111,8 @@ class ClassiferTorch(ClassifierAbs):
 
 
 class ClassiferOnnx(ClassifierAbs):
-    def __init__(self, model_path, input_shape, device):
-        super().__init__(model_path, input_shape, device)
+    def __init__(self, model_path, input_shape, device, gray):
+        super().__init__(model_path, input_shape, device, gray)
         import onnxruntime
         print("Start infering using device: %s" % device)
         self.ort_session = onnxruntime.InferenceSession(model_path)

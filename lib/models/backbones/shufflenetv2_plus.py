@@ -203,7 +203,7 @@ def channel_shuffle(x):
 
 
 class ShuffleNetV2_Plus(nn.Module):
-    def __init__(self, input_size=224, n_class=1000, architecture=None, model_size='Large', clf=False):
+    def __init__(self, input_size=224, n_class=1000, architecture=None, model_size='Large', clf=False, img_channels=3):
         super(ShuffleNetV2_Plus, self).__init__()
 
         self.clf = clf
@@ -229,7 +229,7 @@ class ShuffleNetV2_Plus(nn.Module):
         # building first layer
         input_channel = self.stage_out_channels[1]
         self.first_conv = nn.Sequential(
-            nn.Conv2d(3, input_channel, 3, 2, 1, bias=False),
+            nn.Conv2d(img_channels, input_channel, 3, 2, 1, bias=False),
             nn.BatchNorm2d(input_channel),
             HS(),
         )
@@ -328,11 +328,12 @@ class ShuffleNetV2_Plus(nn.Module):
                     nn.init.constant_(m.bias, 0)
 
 
-def get_shufflenetv2_plus(input_size, n_class, model_size, pretrained=True):
+def get_shufflenetv2_plus(input_size, n_class, model_size, img_channels,
+                          pretrained=True):
     architecture = [0, 0, 3, 1, 1, 1, 0, 0, 2, 0, 2, 1, 1, 0, 2, 0, 2, 1, 3, 2]
     model = ShuffleNetV2_Plus(input_size=input_size, n_class=n_class,
                               architecture=architecture,
-                              model_size=model_size)
+                              model_size=model_size, img_channels=img_channels)
     if pretrained:
         load_checkpoint(model, pretrained, strict=False)
     return model

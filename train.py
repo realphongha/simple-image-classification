@@ -119,13 +119,16 @@ def main(cfg, opt):
         parts_to_freeze = [p.strip() for p in parts_to_freeze]
         model.freeze(parts_to_freeze)
 
-    warmup_freeze_eps = cfg["TRAIN"]["WARMUP_FREEZE"]["EPOCHS"]
-    warmup_freeze_parts = cfg["TRAIN"]["WARMUP_FREEZE"]["PARTS"]
-    if warmup_freeze_eps and warmup_freeze_parts:
-        warmup_freeze = True
-        warmup_freeze_parts = warmup_freeze_parts.strip().split(",")
-        warmup_freeze_parts = [p.strip() for p in warmup_freeze_parts]
-    else:
+    try:
+        warmup_freeze_eps = cfg["TRAIN"]["WARMUP_FREEZE"]["EPOCHS"]
+        warmup_freeze_parts = cfg["TRAIN"]["WARMUP_FREEZE"]["PARTS"]
+        if warmup_freeze_eps and warmup_freeze_parts:
+            warmup_freeze = True
+            warmup_freeze_parts = warmup_freeze_parts.strip().split(",")
+            warmup_freeze_parts = [p.strip() for p in warmup_freeze_parts]
+        else:
+            warmup_freeze = False
+    except TypeError:
         warmup_freeze = False
     frozen = False
 
@@ -249,7 +252,7 @@ if __name__ == "__main__":
                         help='path to config file')
     parser.add_argument('--compile',
                         type=str,
-                        default='reduce-overhead',
+                        default='no',
                         help='Pytorch 2.0 compile, options: default, reduce-overhead, max-autotune, no')
     opt = parser.parse_args()
 

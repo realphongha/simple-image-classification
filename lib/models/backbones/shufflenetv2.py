@@ -66,10 +66,10 @@ class ShuffleV2Block(nn.Module):
 
 class ShuffleNetV2(nn.Module):
     def __init__(self, n_class=1000, model_size='1.0x',
-                 clf=False):
+                 clf=False, img_channels=3):
         super(ShuffleNetV2, self).__init__()
         print('model size is ', model_size)
-        
+
         self.clf = clf
 
         self.stage_repeats = [4, 8, 4]
@@ -88,7 +88,7 @@ class ShuffleNetV2(nn.Module):
         # building first layer
         input_channel = self.stage_out_channels[1]
         self.first_conv = nn.Sequential(
-            nn.Conv2d(3, input_channel, 3, 2, 1, bias=False),
+            nn.Conv2d(img_channels, input_channel, 3, 2, 1, bias=False),
             nn.BatchNorm2d(input_channel),
             nn.ReLU(inplace=True),
         )
@@ -102,14 +102,14 @@ class ShuffleNetV2(nn.Module):
 
             for i in range(numrepeat):
                 if i == 0:
-                    self.features.append(ShuffleV2Block(input_channel, output_channel, 
+                    self.features.append(ShuffleV2Block(input_channel, output_channel,
                                                 mid_channels=output_channel // 2, ksize=3, stride=2))
                 else:
-                    self.features.append(ShuffleV2Block(input_channel // 2, output_channel, 
+                    self.features.append(ShuffleV2Block(input_channel // 2, output_channel,
                                                 mid_channels=output_channel // 2, ksize=3, stride=1))
 
                 input_channel = output_channel
-                
+
         self.features = nn.Sequential(*self.features)
 
         self.conv_last = nn.Sequential(
@@ -161,11 +161,11 @@ class ShuffleNetV2(nn.Module):
                 nn.init.normal_(m.weight, 0, 0.01)
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
-                    
 
-def get_shufflenetv2(model_size, pretrained=True):
+
+def get_shufflenetv2(model_size, img_channels, pretrained=True):
     architecture = [0, 0, 3, 1, 1, 1, 0, 0, 2, 0, 2, 1, 1, 0, 2, 0, 2, 1, 3, 2]
-    model = ShuffleNetV2(model_size=model_size)
+    model = ShuffleNetV2(model_size=model_size, img_channels=img_channels)
     if pretrained:
         load_checkpoint(model, pretrained, strict=False)
     return model
@@ -179,4 +179,4 @@ if __name__ == "__main__":
     test_data = torch.rand(5, 3, 224, 224)
     test_outputs = model(test_data)
     print(test_outputs.size())
-    
+
