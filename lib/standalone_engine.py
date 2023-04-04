@@ -21,12 +21,15 @@ class ClassifierAbs(metaclass=ABCMeta):
 
     def _preprocess(self, img):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = img.astype(np.float32)
         img = cv2.resize(img, self.input_shape, interpolation=cv2.INTER_LINEAR)
-        img = (img/255.0 - self.mean) / self.std
+        img = img.astype(np.float32)
         if self.gray:
             img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
             img = np.expand_dims(img, axis=2)
+            img = (img/255.0 - 0.5) * 2
+            print(img.shape)
+        else:
+            img = (img/255.0 - self.mean) / self.std
         img = img.transpose([2, 0, 1]).astype(np.float32)
         return img[None]
 
@@ -115,7 +118,13 @@ class ClassiferOnnx(ClassifierAbs):
         super().__init__(model_path, input_shape, device, gray)
         import onnxruntime
         print("Start infering using device: %s" % device)
-        self.ort_session = onnxruntime.InferenceSession(model_path)
+        if device == "cuda":
+            providers = ["CUDAExecutionProvider"]
+        elif device == "cpu":
+            providers = ["CPUExecutionProvider"]
+        else:
+            raise NotImplementedError(f"Device {device} is not implemented!")
+        self.ort_session = onnxruntime.InferenceSession(model_path, providers=providers)
         self.input_name = self.ort_session.get_inputs()[0].name
 
     def infer(self, img, test_time=50):

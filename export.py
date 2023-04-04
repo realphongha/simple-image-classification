@@ -10,8 +10,8 @@ def export_onnx(model, dummy_input, opt):
     import onnx
 
     if opt.dynamic:
-        torch.onnx.export(model, dummy_input, opt.output, 
-                         verbose=False, 
+        torch.onnx.export(model, dummy_input, opt.output,
+                         verbose=False,
                          opset_version=opt.opset,
                          do_constant_folding=True,
                          input_names=['input'],
@@ -19,8 +19,8 @@ def export_onnx(model, dummy_input, opt):
                          dynamic_axes={'input': {0: 'batch_size'},
                                         'output': {0: 'batch_size'}})
     else:
-        torch.onnx.export(model, dummy_input, opt.output, 
-                         verbose=False, 
+        torch.onnx.export(model, dummy_input, opt.output,
+                         verbose=False,
                          opset_version=opt.opset,
                          do_constant_folding=True,
                          input_names=['input'],
@@ -34,7 +34,7 @@ def export_onnx(model, dummy_input, opt):
     model_onnx = onnx.load(opt.output)  # load onnx model
     onnx.checker.check_model(model_onnx)  # check onnx model
     # print(onnx.helper.printable_graph(model_onnx.graph))  # print
-    
+
     import onnxruntime
     ort_session = onnxruntime.InferenceSession(opt.output)
 
@@ -71,40 +71,46 @@ def main(opt, cfg):
         model.remove_fc()
     model.to(device)
     model.eval()
-        
-    dummy_input = torch.zeros(opt.batch, 3, cfg["MODEL"]["INPUT_SHAPE"][0], 
-                                cfg["MODEL"]["INPUT_SHAPE"][1]).to(device)
+
+    img_channels = 1 if opt.gray else 3
+    dummy_input = torch.zeros(opt.batch, img_channels,
+                              cfg["MODEL"]["INPUT_SHAPE"][0],
+                              cfg["MODEL"]["INPUT_SHAPE"][1]).to(device)
     if opt.format == "onnx":
         export_onnx(model, dummy_input, opt)
     else:
         raise Exception("%s format is not supported!" % opt.format)
-    
-    
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, required=True, 
+    parser.add_argument('--weights', type=str, required=True,
                         help='path to model weights')
-    parser.add_argument('--config', type=str, required=True, 
+    parser.add_argument('--gray',
+                        action="store_true",
+                        default=False,
+                        help='convert image to grayscale for processing or not?')
+    parser.add_argument('--config', type=str, required=True,
                         help='path to config file')
-    parser.add_argument('--format', type=str, default="onnx", 
+    parser.add_argument('--format', type=str, default="onnx",
                         help='format to export')
-    parser.add_argument('--output', type=str, required=True, 
+    parser.add_argument('--output', type=str, required=True,
                         help='output file path to export')
     parser.add_argument('--device', type=str, default='cpu', help='cuda or cpu')
     parser.add_argument('--batch', type=int, default=1, help='batch size')
-    parser.add_argument('--dynamic', action='store_true', 
+    parser.add_argument('--dynamic', action='store_true',
                         help='dynamic axes')
-    parser.add_argument('--remove-fc', action='store_true', 
+    parser.add_argument('--remove-fc', action='store_true',
                         help='remove fully connected layers')
-    parser.add_argument('--opset', type=int, default=11, 
+    parser.add_argument('--opset', type=int, default=11,
                         help='ONNX: opset version')
     opt = parser.parse_args()
-    
+
     with open(opt.config, "r") as stream:
         try:
             cfg = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
             print(exc)
             quit()
-            
+
     main(opt, cfg)
