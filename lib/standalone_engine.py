@@ -7,7 +7,7 @@ from abc import ABCMeta, abstractmethod
 class ClassifierAbs(metaclass=ABCMeta):
     def __init__(self, model_path, input_shape, device, gray=False):
         self.model_path = model_path
-        self.input_shape = input_shape
+        self.input_shape = tuple(input_shape)
         self.device = device
         self.gray = gray
         self.mean = (0.485, 0.456, 0.406)

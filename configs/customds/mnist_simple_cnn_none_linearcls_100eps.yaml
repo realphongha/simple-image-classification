@@ -10,22 +10,17 @@ CUDNN:
 
 DATASET: 
   NAME: "customds"
-  TRAIN: "/mnt/hdd10tb/Users/phonghh/data/dogs-vs-cats/train"
-  VAL: "/mnt/hdd10tb/Users/phonghh/data/dogs-vs-cats/val"
-  CLS: "cat, dog"
-  NUM_CLS: 2
+  TRAIN:  "/mnt/hdd10tb/Users/phonghh/data/mnist/train"  
+  VAL:  "/mnt/hdd10tb/Users/phonghh/data/mnist/test"  
+  CLS: "0, 1, 2, 3, 4, 5, 6, 7, 8, 9"
+  NUM_CLS: 10 
   IMG_EXT:
   - jpg
   - jpeg
   - png
-  FLIP: true
-  GRAYSCALE: 0.05
-  COLORJITTER: 
-    PROB: 0.1
-    BRIGHTNESS: 0.5
-    CONTRAST: 0.5
-    SATURATION: 0.3
-    HUE: 0.3
+  FLIP: false 
+  GRAYSCALE:
+  COLORJITTER:
   GAUSSIAN_BLUR:
     PROB: 0.05
     KERNEL_SIZE: 
@@ -42,60 +37,48 @@ DATASET:
     - -20 
     - 20
     PROB: 0.2
-  RANDOM_CROP: 1.143
+  RANDOM_CROP: 
   RANDOM_ERASING:
-    PROB: 0.2
-    SCALE: 
-    - 0.02
-    - 0.33
-    RATIO: 
-    - 0.3
-    - 3.3
-    VALUE: 0
-  GRAY: False
   OVERSAMPLING: false
+  GRAY: true 
 
 MODEL:
   BACKBONE: 
-    NAME: "shufflenetv2"
-    WIDEN_FACTOR: '1.0x'  # '0.5x', '1.0x', '1.5x', '2.0x'
+    NAME: "simple_cnn"
+    WIDEN_FACTOR: '1.0x'  # '1.0x'
   NECK: "GlobalAveragePooling"
   HEAD:
     NAME: "LinearCls"
-    DROPOUT: 0.0
+    DROPOUT: 0.2
     LOSS: "CrossEntropy"
     LOSS_WEIGHT:
-    - 1.0
-    - 1.0
   INPUT_SHAPE: 
-  - 224
-  - 224
+  - 28 
+  - 28 
   FREEZE: ""  # backbone, neck or head; separated by ','; exp: "backbone, neck"
 
 TRAIN:
   AUTO_RESUME: true
   CKPT: 
-  PRETRAINED: "/mnt/hdd10tb/Users/phonghh/assets/pretrained/shufflenetv2/ShuffleNetV2.1.0x.pth.tar"
+  PRETRAINED:   
   EPOCHS: 10
   EARLY_STOPPING:
   LR_SCHEDULE: "multistep"
   WARMUP:
   WARMUP_FREEZE:
-    EPOCHS: 2 
-    PARTS: "backbone"
   LR: 0.001
   LR_FACTOR: 0.1
   LR_STEP:
-  - 5
-  - 8
-  BATCH_SIZE: 32
+  - 6 
+  - 8 
+  BATCH_SIZE: 16 
   OPTIMIZER: "adam"
   MOMENTUM: 0.9
-  WEIGHT_DECAY: 0.0001
+  WEIGHT_DECAY: 0.001
   SHUFFLE: true
 
 TEST:
-  BATCH_SIZE: 32
-  WEIGHTS: 'weights/dogsvscats_shufflenetv2_none_linearcls_10eps.pth'
+  BATCH_SIZE: 16 
+  WEIGHTS: 'weights/mnist_simple_cnn_none_linearcls_100eps.pth'
   METRIC: 'acc'
   SHUFFLE: true

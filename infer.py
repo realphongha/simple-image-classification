@@ -41,7 +41,12 @@ def main(opt):
         for img in opt.src_path:
             print("Image:", img)
             img = cv2.imread(img)
-            cls, cls_prob, latency = engine.infer(img)
+            if opt.batch:
+                imgs = [img] * opt.batch
+                clss, cls_probs, latency = engine.infer_batch(imgs)
+                cls, cls_prob = clss[0], cls_probs[0]
+            else:
+                cls, cls_prob, latency = engine.infer(img)
 
             print("Result:")
             cls_name = opt.cls[cls] if opt.cls else str(cls)
@@ -168,7 +173,9 @@ if __name__ == "__main__":
                         type=str,
                         nargs="+",
                         help='class names for classification')
-    parser.add_argument('--batch', action='store_true',
+    parser.add_argument('--batch',
+                        type=int,
+                        default=None,
                         help='use batch for classification')
     parser.add_argument('--config',
                         type=str,
