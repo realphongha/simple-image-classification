@@ -9,7 +9,7 @@ from ..transforms import *
 
 class BaseDs(torch.utils.data.Dataset):
     def __init__(self, data_path, is_train, cfg):
-        self.data_path = data_path
+        self.data_path = data_path if isinstance(data_path, list) else [data_path]
         self.is_train = is_train
         self.cfg = cfg
         self.gray = cfg["DATASET"].get("GRAY", False)

@@ -6,14 +6,15 @@ from .base_ds import BaseDs
 class CustomDs(BaseDs):
     def __init__(self, data_path, is_train, cfg):
         super(CustomDs, self).__init__(data_path, is_train, cfg)
-        for d in os.listdir(self.data_path):
-            dir = os.path.join(self.data_path, d)
-            if not os.path.isdir(dir) or d not in self.cls: continue
-            for fn in os.listdir(dir):
-                if fn[-3:] not in cfg["DATASET"]["IMG_EXT"] and fn[-4:] not in cfg["DATASET"]["IMG_EXT"]: continue
-                fp = os.path.join(dir, fn)
-                self.data.append(fp)
-                self.labels.append(self.cls_dict[d])
+        for data_path in self.data_path:
+            for d in os.listdir(data_path):
+                dir = os.path.join(data_path, d)
+                if not os.path.isdir(dir) or d not in self.cls: continue
+                for fn in os.listdir(dir):
+                    if fn[-3:] not in cfg["DATASET"]["IMG_EXT"] and fn[-4:] not in cfg["DATASET"]["IMG_EXT"]: continue
+                    fp = os.path.join(dir, fn)
+                    self.data.append(fp)
+                    self.labels.append(self.cls_dict[d])
         if cfg["DATASET"]["OVERSAMPLING"] and is_train:
             cls_count = Counter(self.labels)
             max_cls_count = max(cls_count.values())

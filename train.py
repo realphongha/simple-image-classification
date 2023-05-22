@@ -19,6 +19,7 @@ from lib.losses import build_loss
 from lib.tools import train, evaluate
 from lib.utils import save_checkpoint
 from lib.scheduler import build_scheduler
+from lib.models.utils import load_checkpoint
 
 
 def main(cfg, opt):
@@ -114,6 +115,9 @@ def main(cfg, opt):
 
     lr_scheduler = build_scheduler(cfg, optimizer, last_epoch)
 
+    pretrained_path = cfg["TRAIN"].get("PRETRAINED_ALL", None)
+    if pretrained_path:
+        load_checkpoint(model, pretrained_path, strict=False)
     if cfg["MODEL"]["FREEZE"]:
         parts_to_freeze = cfg["MODEL"]["FREEZE"].strip().split(",")
         parts_to_freeze = [p.strip() for p in parts_to_freeze]
