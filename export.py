@@ -2,12 +2,13 @@ import argparse
 import torch
 import yaml
 import numpy as np
-import torch
+
 from lib.models.model import Model
 
 
 def export_onnx(model, dummy_input, opt):
     import onnx
+    import onnxsim
 
     if opt.dynamic:
         torch.onnx.export(model, dummy_input, opt.output,
@@ -35,6 +36,12 @@ def export_onnx(model, dummy_input, opt):
     onnx.checker.check_model(model_onnx)  # check onnx model
     # print(onnx.helper.printable_graph(model_onnx.graph))  # print
 
+    # Simplify                                                                                                                                             │  2     --output ckpts/PublicMix68kp/PublicMix68kp_128x128_adam_ep500_lr0.0007_bs64_STARLoss_v2_AAM_e898b834-9c8d-4c07-998f-f2ef539180eb-fin-0.0299/model/STAR
+    if opt.simplify:                                                                                                                                       │    loss_PFL68-30k_128x128_ep500_lr7e-4_b64.onnx \
+        model_onnx, check = onnxsim.simplify(model_onnx)                                                                                                   │  1     --data_definition 300W \
+        onnx.save(model_onnx, opt.output)
+
+    # Checks even more
     import onnxruntime
     ort_session = onnxruntime.InferenceSession(opt.output)
 
@@ -53,8 +60,6 @@ def main(opt, cfg):
     if not torch.cuda.is_available():
         device = 'cpu'
     device = torch.device(opt.device)
-    if not torch.cuda.is_available():
-        device = 'cpu'
     if cfg["MODEL"]["BACKBONE"]["NAME"] == "mobileone":
         cfg["TRAIN"]["PRETRAINED"] = False
         model = Model(cfg, training=True)
@@ -104,6 +109,7 @@ if __name__ == "__main__":
                         help='remove fully connected layers')
     parser.add_argument('--opset', type=int, default=11,
                         help='ONNX: opset version')
+    parser.add_argument('--simplify', action='store_true', help='simplify model')
     opt = parser.parse_args()
 
     with open(opt.config, "r") as stream:
