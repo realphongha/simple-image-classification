@@ -3,6 +3,7 @@ outputs/*
 object_detection/*.yaml
 random_tools/*
 examples/others/*
+data
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
