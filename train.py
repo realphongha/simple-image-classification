@@ -19,9 +19,10 @@ from lib.losses import build_loss
 from lib.tools import train, evaluate
 from lib.utils import save_checkpoint
 from lib.scheduler import build_scheduler
+from lib.models.utils import load_checkpoint
 
 
-def main(cfg):
+def main(cfg, opt):
     cudnn.benchmark = cfg["CUDNN"]["BENCHMARK"]
     cudnn.deterministic = cfg["CUDNN"]["DETERMINISTIC"]
     cudnn.enabled = cfg["CUDNN"]["ENABLED"]
@@ -114,22 +115,35 @@ def main(cfg):
 
     lr_scheduler = build_scheduler(cfg, optimizer, last_epoch)
 
+    pretrained_path = cfg["TRAIN"].get("PRETRAINED_ALL", None)
+    if pretrained_path:
+        load_checkpoint(model, pretrained_path, strict=False)
     if cfg["MODEL"]["FREEZE"]:
         parts_to_freeze = cfg["MODEL"]["FREEZE"].strip().split(",")
         parts_to_freeze = [p.strip() for p in parts_to_freeze]
         model.freeze(parts_to_freeze)
 
-    warmup_freeze_eps = cfg["TRAIN"]["WARMUP_FREEZE"]["EPOCHS"]
-    warmup_freeze_parts = cfg["TRAIN"]["WARMUP_FREEZE"]["PARTS"]
-    if warmup_freeze_eps and warmup_freeze_parts:
-        warmup_freeze = True
-        warmup_freeze_parts = warmup_freeze_parts.strip().split(",")
-        warmup_freeze_parts = [p.strip() for p in warmup_freeze_parts]
-    else:
+    try:
+        warmup_freeze_eps = cfg["TRAIN"]["WARMUP_FREEZE"]["EPOCHS"]
+        warmup_freeze_parts = cfg["TRAIN"]["WARMUP_FREEZE"]["PARTS"]
+        if warmup_freeze_eps and warmup_freeze_parts:
+            warmup_freeze = True
+            warmup_freeze_parts = warmup_freeze_parts.strip().split(",")
+            warmup_freeze_parts = [p.strip() for p in warmup_freeze_parts]
+        else:
+            warmup_freeze = False
+    except TypeError:
         warmup_freeze = False
     frozen = False
 
-    model.to(device)
+    if not warmup_freeze:
+        # compiles model right now if doesn't need freezing for warmup
+        if opt.compile == "default":
+            print(f"Compiling model in {opt.compile} mode...")
+            model = torch.compile(model)
+        elif opt.compile in ("reduce-overhead", "max-autotune"):
+            print(f"Compiling model in {opt.compile} mode...")
+            model = torch.compile(model, mode=opt.compile)
 
     for epoch in range(begin_epoch, cfg["TRAIN"]["EPOCHS"]):
         print("EPOCH %i:" % epoch)
@@ -141,6 +155,15 @@ def main(cfg):
                 frozen = True
             elif epoch >= warmup_freeze_eps and frozen:
                 model.free(warmup_freeze_parts)
+
+                # if need to freeze model for warmup, compile after freeing model
+                if opt.compile == "default":
+                    print(f"Compiling model in {opt.compile} mode...")
+                    model = torch.compile(model)
+                elif opt.compile in ("reduce-overhead", "max-autotune"):
+                    print(f"Compiling model in {opt.compile} mode...")
+                    model = torch.compile(model, mode=opt.compile)
+
                 frozen = False
 
         # trains
@@ -231,6 +254,10 @@ if __name__ == "__main__":
                         type=str,
                         default='configs/customds/dogsvscats_shufflenetv2_none_linearcls_10eps.yaml',
                         help='path to config file')
+    parser.add_argument('--compile',
+                        type=str,
+                        default='no',
+                        help='Pytorch 2.0 compile, options: default, reduce-overhead, max-autotune, no')
     opt = parser.parse_args()
 
     with open(opt.config, "r") as stream:
@@ -240,4 +267,4 @@ if __name__ == "__main__":
             print(exc)
             quit()
 
-    main(cfg)
+    main(cfg, opt)

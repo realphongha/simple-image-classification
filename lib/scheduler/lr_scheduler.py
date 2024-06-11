@@ -2,11 +2,14 @@ import math
 from torch.optim.lr_scheduler import LambdaLR
 
 
-class ConstantLRSchedule(LambdaLR):
+class SimpleLRSchedule(LambdaLR):
     """ Constant learning rate schedule.
     """
     def __init__(self, optimizer, last_epoch=-1):
-        super(ConstantLRSchedule, self).__init__(optimizer, lambda _: 1.0, last_epoch=last_epoch)
+        super(SimpleLRSchedule, self).__init__(optimizer, self.lr_lambda, last_epoch=last_epoch)
+
+    def lr_lambda(self, step):
+        return 1.
 
 
 class WarmupConstantSchedule(LambdaLR):
@@ -65,12 +68,12 @@ class WarmupMultiStepSchedule(LambdaLR):
         Linearly increases learning rate schedule from 0 to 1 over `warmup_steps` training steps.
         Keeps learning rate schedule equal to 1. after warmup_steps.
     """
-    def __init__(self, optimizer, warmup_steps, lr_steps, lr_factor, 
+    def __init__(self, optimizer, warmup_steps, lr_steps, lr_factor,
         last_epoch=-1):
         self.warmup_steps = warmup_steps
         self.lr_steps = lr_steps
         self.lr_factor = lr_factor
-        super(WarmupMultiStepSchedule, self).__init__(optimizer, self.lr_lambda, 
+        super(WarmupMultiStepSchedule, self).__init__(optimizer, self.lr_lambda,
             last_epoch=last_epoch)
 
     def lr_lambda(self, step):
@@ -86,4 +89,4 @@ class WarmupMultiStepSchedule(LambdaLR):
             if e >= len(self.lr_steps):
                 break
         return lamb
-        
+

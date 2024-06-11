@@ -9,9 +9,10 @@ from ..transforms import *
 
 class BaseDs(torch.utils.data.Dataset):
     def __init__(self, data_path, is_train, cfg):
-        self.data_path = data_path
+        self.data_path = data_path if isinstance(data_path, list) else [data_path]
         self.is_train = is_train
         self.cfg = cfg
+        self.gray = cfg["DATASET"].get("GRAY", False)
         self.cls = cfg["DATASET"]["CLS"].strip().split(",")
         self.cls = [c.strip() for c in self.cls]
         self.cls_dict = dict()
@@ -41,19 +42,19 @@ class BaseDs(torch.utils.data.Dataset):
                 pipeline.append(transforms.Grayscale())
             if self.cfg["DATASET"]["COLORJITTER"] and self.cfg["DATASET"]["COLORJITTER"]["PROB"] > random.random():
                 pipeline.append(transforms.ColorJitter(
-                    brightness=self.cfg["DATASET"]["COLORJITTER"]["BRIGHTNESS"], 
-                    contrast=self.cfg["DATASET"]["COLORJITTER"]["CONTRAST"], 
-                    saturation=self.cfg["DATASET"]["COLORJITTER"]["SATURATION"], 
+                    brightness=self.cfg["DATASET"]["COLORJITTER"]["BRIGHTNESS"],
+                    contrast=self.cfg["DATASET"]["COLORJITTER"]["CONTRAST"],
+                    saturation=self.cfg["DATASET"]["COLORJITTER"]["SATURATION"],
                     hue=self.cfg["DATASET"]["COLORJITTER"]["HUE"]
                 ))
             if self.cfg["DATASET"]["GAUSSIAN_BLUR"] and self.cfg["DATASET"]["GAUSSIAN_BLUR"]["PROB"] > random.random():
                 pipeline.append(transforms.GaussianBlur(
-                    kernel_size=self.cfg["DATASET"]["GAUSSIAN_BLUR"]["KERNEL_SIZE"], 
+                    kernel_size=self.cfg["DATASET"]["GAUSSIAN_BLUR"]["KERNEL_SIZE"],
                     sigma=self.cfg["DATASET"]["GAUSSIAN_BLUR"]["SIGMA"]
                 ))
             if self.cfg["DATASET"]["PERSPECTIVE"]:
                 pipeline.append(transforms.RandomPerspective(
-                    distortion_scale=self.cfg["DATASET"]["PERSPECTIVE"]["SCALE"], 
+                    distortion_scale=self.cfg["DATASET"]["PERSPECTIVE"]["SCALE"],
                     p=self.cfg["DATASET"]["PERSPECTIVE"]["PROB"]
                 ))
             if self.cfg["DATASET"]["ROTATE"] and self.cfg["DATASET"]["ROTATE"]["PROB"] > random.random():
@@ -79,13 +80,21 @@ class BaseDs(torch.utils.data.Dataset):
             raw_img = cv2.cvtColor(raw_img, cv2.COLOR_GRAY2RGB)
         if self.is_train:
             if self.cfg["DATASET"]["RANDOM_ERASING"]:
-                random_erasing(raw_img, 
+                random_erasing(raw_img,
                     p=self.cfg["DATASET"]["RANDOM_ERASING"]["PROB"],
                     scale=self.cfg["DATASET"]["RANDOM_ERASING"]["SCALE"],
                     ratio=self.cfg["DATASET"]["RANDOM_ERASING"]["RATIO"],
                     value=self.cfg["DATASET"]["RANDOM_ERASING"]["VALUE"])
         img = raw_img.astype(np.float32)
-        img = (img/255.0 - self.mean) / self.std
+        if self.gray:
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+            # import os
+            # os.makedirs("gray", exist_ok=True)
+            # cv2.imwrite(f"gray/cls{label}-{index}.jpg", img)
+            img = (img/255.0 - 0.5) * 2
+            img = np.expand_dims(img, axis=2)
+        else:
+            img = (img/255.0 - self.mean) / self.std
         img = img.transpose([2, 0, 1])
         data = torch.Tensor(img)
         return data, label, raw_img

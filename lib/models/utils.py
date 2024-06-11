@@ -16,13 +16,13 @@ def load_checkpoint(model, checkpoint, strict=False):
     for k in source_state_:
         if k.startswith('module') and not k.startswith('module_list'):
             new_k = k[7:]
-            if new_k.startswith('backbone'):
-                new_k = new_k[9:]
+            # if new_k.startswith('backbone'):
+            #     new_k = new_k[9:]
             source_state[new_k] = source_state_[k]
         else:
             new_k = k
-            if new_k.startswith('backbone'):
-                new_k = new_k[9:]
+            # if new_k.startswith('backbone'):
+            #     new_k = new_k[9:]
             source_state[new_k] = source_state_[k]
 
     for target_key, target_value in target_state.items():

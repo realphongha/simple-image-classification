@@ -10,6 +10,7 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.cfg = cfg
         self.nc = cfg["DATASET"]["NUM_CLS"]
+        self.img_channels = 1 if cfg["DATASET"].get("GRAY", None) else 3
         self.backbone, self.out_channels = build_backbone(cfg, training, self)
         self.neck, self.out_channels = build_neck(cfg, training, self)
         self.head = build_head(cfg, training, self)
@@ -43,7 +44,8 @@ class Model(nn.Module):
 
     def forward(self, x):
         x = self.backbone(x)
-        x = self.neck(x)
+        if self.neck is not None:
+            x = self.neck(x)
         x = self.head(x)
         return x
 

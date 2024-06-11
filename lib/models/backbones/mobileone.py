@@ -257,8 +257,7 @@ class MobileOneBlock(nn.Module):
         return kernel * t, beta - running_mean * gamma / std
 
     def _conv_bn(self,
-                 kernel_size: int,
-                 padding: int) -> nn.Sequential:
+                 kernel_size: int, padding: int) -> nn.Sequential:
         """ Helper method to construct conv-batchnorm layers.
 
         :param kernel_size: Size of the convolution kernel.
@@ -290,7 +289,8 @@ class MobileOne(nn.Module):
                  inference_mode: bool = False,
                  use_se: bool = False,
                  num_conv_branches: int = 1,
-                 clf: bool = False) -> None:
+                 clf: bool = False,
+                 img_channels: int = 3) -> None:
         """ Construct MobileOne model.
 
         :param num_blocks_per_stage: List of number of blocks per stage.
@@ -311,7 +311,7 @@ class MobileOne(nn.Module):
         self.clf = clf
 
         # Build stages
-        self.stage0 = MobileOneBlock(in_channels=3, out_channels=self.in_planes,
+        self.stage0 = MobileOneBlock(in_channels=img_channels, out_channels=self.in_planes,
                                      kernel_size=3, stride=2, padding=1,
                                      inference_mode=self.inference_mode)
         self.cur_layer_idx = 1
@@ -442,9 +442,10 @@ def reparameterize_model(model: torch.nn.Module) -> nn.Module:
     return model
 
 
-def get_mobileone(num_classes, training, model_size, pretrained=True):
+def get_mobileone(num_classes, training, model_size, img_channels, pretrained=True):
     variant_params = PARAMS[model_size]
     model = MobileOne(num_classes=num_classes, inference_mode=not training,
+                      img_channels=img_channels,
                       **variant_params)
     if pretrained:
         load_checkpoint(model, pretrained, strict=False)
