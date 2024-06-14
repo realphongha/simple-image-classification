@@ -36,9 +36,8 @@ def export_onnx(model, dummy_input, opt):
     onnx.checker.check_model(model_onnx)  # check onnx model
     # print(onnx.helper.printable_graph(model_onnx.graph))  # print
 
-    # Simplify                                                                                                                                             │  2     --output ckpts/PublicMix68kp/PublicMix68kp_128x128_adam_ep500_lr0.0007_bs64_STARLoss_v2_AAM_e898b834-9c8d-4c07-998f-f2ef539180eb-fin-0.0299/model/STAR
-    if opt.simplify:                                                                                                                                       │    loss_PFL68-30k_128x128_ep500_lr7e-4_b64.onnx \
-        model_onnx, check = onnxsim.simplify(model_onnx)                                                                                                   │  1     --data_definition 300W \
+    if opt.simplify:
+        model_onnx, check = onnxsim.simplify(model_onnx)
         onnx.save(model_onnx, opt.output)
 
     # Checks even more
@@ -79,8 +78,8 @@ def main(opt, cfg):
 
     img_channels = 1 if opt.gray else 3
     dummy_input = torch.zeros(opt.batch, img_channels,
-                              cfg["MODEL"]["INPUT_SHAPE"][0],
-                              cfg["MODEL"]["INPUT_SHAPE"][1]).to(device)
+                              cfg["MODEL"]["INPUT_SHAPE"][1],
+                              cfg["MODEL"]["INPUT_SHAPE"][0]).to(device)
     if opt.format == "onnx":
         export_onnx(model, dummy_input, opt)
     else:

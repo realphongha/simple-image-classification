@@ -20,12 +20,12 @@ def main(opt):
         if cfg["GPUS"]:
             os.environ["CUDA_VISIBLE_DEVICES"] = cfg["GPUS"]
 
-        engine = ClassiferTorch("doesnt_matter",
+        engine = ClassifierTorch("doesnt_matter",
                                 cfg["MODEL"]["INPUT_SHAPE"],
                                 "doesnt_matter", opt.gray,
                                 cfg, opt.compile)
     elif opt.engine == "onnx":
-        engine = ClassiferOnnx(opt.model, opt.input_shape, opt.device,
+        engine = ClassifierOnnx(opt.model, opt.input_shape, opt.device,
                                opt.gray)
     else:
         raise NotImplementedError("Engine %s is not supported!" % opt.engine)

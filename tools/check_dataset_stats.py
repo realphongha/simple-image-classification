@@ -2,7 +2,9 @@ import os
 
 trainset_path = "data/dogs-vs-cats/train"
 valset_path = "data/dogs-vs-cats/val"
-classes = ("cat", "dog")
+trainset_path = "/mnt/hdd18tb/projects/phonghh/datasets/age_gender/fs15_age_cls/train"
+valset_path = "/mnt/hdd18tb/projects/phonghh/datasets/age_gender/fs15_age_cls/val"
+classes = ("young", "mid", "old")
 exts = ("jpg", "jpeg", "png")
 
 print("Trainset:")

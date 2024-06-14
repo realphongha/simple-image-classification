@@ -7,7 +7,8 @@ def build_neck(cfg, training, model):
     out_channels = model.out_channels
     if neck_name == "GlobalAveragePooling":
         neck = nn.AvgPool2d(7)
-    elif neck_name == "no":
+    elif not neck_name or neck_name == "no":
+        cfg["MODEL"]["NECK"] = "none"
         neck = None
     elif neck_name == "B-CNN":
         neck = BCnnNeck()

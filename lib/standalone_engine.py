@@ -19,15 +19,30 @@ class ClassifierAbs(metaclass=ABCMeta):
         e_x = np.exp(x - np.max(x))
         return e_x / e_x.sum()
 
+    def square_pad(self, image):
+        height, width = image.shape[:2]
+
+        if height > width:
+            delta = height - width
+            top, bottom, left, right = 0, 0, delta // 2, delta - (delta // 2)
+        else:
+            delta = width - height
+            top, bottom, left, right = delta // 2, delta - (delta // 2), 0, 0
+
+        color = [0, 0, 0]
+        padded_image = cv2.copyMakeBorder(image, top, bottom, left, right,
+                                          cv2.BORDER_CONSTANT, value=color)
+        return padded_image
+
     def _preprocess(self, img):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = self.square_pad(img)
         img = cv2.resize(img, self.input_shape, interpolation=cv2.INTER_LINEAR)
         img = img.astype(np.float32)
         if self.gray:
             img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
             img = np.expand_dims(img, axis=2)
             img = (img/255.0 - 0.5) * 2
-            print(img.shape)
         else:
             img = (img/255.0 - self.mean) / self.std
         img = img.transpose([2, 0, 1]).astype(np.float32)
@@ -43,7 +58,7 @@ class ClassifierAbs(metaclass=ABCMeta):
         pass
 
 
-class ClassiferTorch(ClassifierAbs):
+class ClassifierTorch(ClassifierAbs):
     def __init__(self, model_path, input_shape, device, gray, cfg, compile):
         super().__init__(model_path, input_shape, device, gray)
         import torch
@@ -113,7 +128,7 @@ class ClassiferTorch(ClassifierAbs):
         return clss, cls_probs, np.mean(speed)/len(imgs)
 
 
-class ClassiferOnnx(ClassifierAbs):
+class ClassifierOnnx(ClassifierAbs):
     def __init__(self, model_path, input_shape, device, gray):
         super().__init__(model_path, input_shape, device, gray)
         import onnxruntime

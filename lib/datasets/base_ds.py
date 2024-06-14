@@ -59,14 +59,22 @@ class BaseDs(torch.utils.data.Dataset):
                 ))
             if self.cfg["DATASET"]["ROTATE"] and self.cfg["DATASET"]["ROTATE"]["PROB"] > random.random():
                 pipeline.append(transforms.RandomRotation(degrees=self.cfg["DATASET"]["ROTATE"]["DEGREES"]))
+        w, h = self.input_shape
         if self.is_train and self.cfg["DATASET"]["RANDOM_CROP"]:
             ratio = self.cfg["DATASET"]["RANDOM_CROP"]
-            pipeline.append(transforms.Resize((int(self.input_shape[0]*ratio), int(self.input_shape[1]*ratio))))
-            pipeline.append(transforms.RandomResizedCrop(self.input_shape))
-            safe_pipeline.append(transforms.Resize(self.input_shape))
+            if type(ratio) == int:
+                ratio_w = ratio
+                ratio_h = ratio
+            else:
+                ratio_w, ratio_h = ratio
+            pipeline.append(SquarePad())
+            pipeline.append(transforms.Resize((int(h*ratio_h), int(w*ratio_w))))
+            pipeline.append(transforms.RandomCrop((h, w)))
         else:
-            pipeline.append(transforms.Resize(self.input_shape))
-            safe_pipeline.append(transforms.Resize(self.input_shape))
+            pipeline.append(SquarePad())
+            pipeline.append(transforms.Resize((h, w)))
+        safe_pipeline.append(SquarePad())
+        safe_pipeline.append(transforms.Resize((h, w)))
         raw_img = cv2.cvtColor(raw_img, cv2.COLOR_BGR2RGB)
         raw_img = Image.fromarray(raw_img)
         try:
@@ -86,6 +94,7 @@ class BaseDs(torch.utils.data.Dataset):
                     ratio=self.cfg["DATASET"]["RANDOM_ERASING"]["RATIO"],
                     value=self.cfg["DATASET"]["RANDOM_ERASING"]["VALUE"])
         img = raw_img.astype(np.float32)
+        # cv2.imwrite(f"preprocessed_img/cls{label}-{index}.jpg", img)
         if self.gray:
             img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
             # import os
