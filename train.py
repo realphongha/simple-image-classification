@@ -111,7 +111,7 @@ def main(cfg, opt):
                                 datetime_str)
         os.makedirs(output_path, exist_ok=False)
         with open(os.path.join(output_path, "configs.txt"), "w") as output_file:
-            json.dump(cfg, output_file)
+            json.dump(cfg, output_file, indent=4)
 
     lr_scheduler = build_scheduler(cfg, optimizer, last_epoch)
 
@@ -138,12 +138,8 @@ def main(cfg, opt):
 
     if not warmup_freeze:
         # compiles model right now if doesn't need freezing for warmup
-        if opt.compile == "default":
-            print(f"Compiling model in {opt.compile} mode...")
-            model = torch.compile(model)
-        elif opt.compile in ("reduce-overhead", "max-autotune"):
-            print(f"Compiling model in {opt.compile} mode...")
-            model = torch.compile(model, mode=opt.compile)
+        print(f"Compiling model in {opt.compile} mode...")
+        model = torch.compile(model, mode=opt.compile)
 
     for epoch in range(begin_epoch, cfg["TRAIN"]["EPOCHS"]):
         print("EPOCH %i:" % epoch)
@@ -157,12 +153,8 @@ def main(cfg, opt):
                 model.free(warmup_freeze_parts)
 
                 # if need to freeze model for warmup, compile after freeing model
-                if opt.compile == "default":
-                    print(f"Compiling model in {opt.compile} mode...")
-                    model = torch.compile(model)
-                elif opt.compile in ("reduce-overhead", "max-autotune"):
-                    print(f"Compiling model in {opt.compile} mode...")
-                    model = torch.compile(model, mode=opt.compile)
+                print(f"Compiling model in {opt.compile} mode...")
+                model = torch.compile(model, mode=opt.compile)
 
                 frozen = False
 

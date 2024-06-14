@@ -103,6 +103,6 @@ if __name__ == "__main__":
                                datetime_str)
     os.makedirs(output_path, exist_ok=False)
     with open(os.path.join(output_path, "configs.txt"), "w") as output_file:
-        json.dump(cfg, output_file)
+        json.dump(cfg, output_file, indent=4)
 
     main(cfg, output_path)

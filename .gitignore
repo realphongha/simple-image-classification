@@ -1,4 +1,10 @@
 # projects
+configs/customds/*
+!configs/customds/customds_*
+!configs/customds/dogsvscats_*
+!configs/customds/mnist_*
+weights/*
+!weights/dogsvscats_*
 outputs/*
 object_detection/*.yaml
 random_tools/*

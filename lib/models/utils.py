@@ -19,6 +19,9 @@ def load_checkpoint(model, checkpoint, strict=False):
             # if new_k.startswith('backbone'):
             #     new_k = new_k[9:]
             source_state[new_k] = source_state_[k]
+        elif k.startswith('backbone'):
+            new_k = k[9:]
+            source_state[new_k] = source_state_[k]
         else:
             new_k = k
             # if new_k.startswith('backbone'):

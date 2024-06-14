@@ -48,7 +48,7 @@ def scale_boxes(boxes, orig_shape, new_shape):
     boxes[:, ::2] -= pad[1]
     boxes[:, 1::2] -= pad[0]
     boxes[:, :4] /= gain
-    
+
     boxes[:, ::2].clamp_(0, orig_shape[1])
     boxes[:, 1::2].clamp_(0, orig_shape[0])
     return boxes.round()
@@ -197,7 +197,8 @@ class YoloV5Abs(metaclass=ABCMeta):
         self.std = (0.229, 0.224, 0.225)
 
     def _preprocess(self, image):
-        img, ratio, (dw, dh) = letterbox(image, new_shape=self.input_shape, 
+        w, h = self.input_shape
+        img, ratio, (dw, dh) = letterbox(image, new_shape=(h, w),
             auto=self.engine in ("pt", "torch"))
         img = np.ascontiguousarray(img.transpose((2, 0, 1))[::-1])
         img = img.astype(np.float32)
@@ -241,7 +242,7 @@ class YoloV5Abs(metaclass=ABCMeta):
 class YoloV5Onnx(YoloV5Abs):
     def __init__(self, model_path, input_shape, device, cls, nc, conf_thres, iou_thres):
         self.engine = "onnx"
-        super(YoloV5Onnx, self).__init__(model_path, input_shape, device, cls, 
+        super(YoloV5Onnx, self).__init__(model_path, input_shape, device, cls,
             nc, conf_thres, iou_thres)
         import onnxruntime
         self.ort_session = onnxruntime.InferenceSession(model_path)
@@ -254,16 +255,16 @@ class YoloV5Onnx(YoloV5Abs):
         return boxes
 
 
-def get_yolov5(weights, cls, nc, engine, input_shape=(640, 640), device="cpu", 
+def get_yolov5(weights, cls, nc, engine, input_shape=(640, 640), device="cpu",
     conf=0.25, iou=0.55):
     if engine == "onnx":
-        infer_engine = YoloV5Onnx(weights, input_shape, device, cls, nc, 
+        infer_engine = YoloV5Onnx(weights, input_shape, device, cls, nc,
             conf, iou)
     else:
         raise NotImplementedError("%s is not implemented!" % engine)
     return infer_engine
 
-    
+
 if __name__ == "__main__":
     img_path = "examples/images/cat.jpeg"
     model_path = "weights/yolov5s.onnx"
@@ -275,7 +276,7 @@ if __name__ == "__main__":
     iou_thres = 0.55
     engine = "onnx"
     if engine == "onnx":
-        infer_engine = YoloV5Onnx(model_path, input_shape, device, cls, nc, 
+        infer_engine = YoloV5Onnx(model_path, input_shape, device, cls, nc,
             conf_thres, iou_thres)
     else:
         raise NotImplementedError("Engine %s is not implemented!" % engine)

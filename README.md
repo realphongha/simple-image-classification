@@ -29,7 +29,7 @@ Simple image classification with Pytorch. Currently supporting:
 ## Installation:
 Clone this repo:  
 `git clone https://github.com/realphongha/simple-image-classification.git`  
-Go in the repo and install requirements:  
+Go in the repo and install requirements (tested on Python 3.8 only):  
 `cd simple-image-classification`  
 `pip install -r requirements.txt`
 ## Training:

@@ -3,6 +3,7 @@ from .shufflenetv2_plus import get_shufflenetv2_plus
 from .mobilenetv3 import get_mobilenet_v3
 from .mobileone import get_mobileone
 from .simple_cnn import get_simple_cnn_backbone
+from .vit import get_vit
 
 
 def build_backbone(cfg, training, model):
@@ -44,7 +45,11 @@ def build_backbone(cfg, training, model):
             cfg["MODEL"]["BACKBONE"]["WIDEN_FACTOR"],
             img_channels,
             cfg["TRAIN"]["PRETRAINED"] if training else None,
-
+        )
+    elif backbone_name == "vit":
+        backbone, out_channels = get_vit(
+            cfg["MODEL"]["BACKBONE"]["WIDEN_FACTOR"],
+            cfg["TRAIN"]["PRETRAINED"] if training else None,
         )
     else:
         raise NotImplementedError("Backbone %s is not implemented!" %
